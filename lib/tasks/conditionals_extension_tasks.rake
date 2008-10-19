@@ -1,6 +1,6 @@
 namespace :radiant do
   namespace :extensions do
-    namespace :conditionals do
+    namespace :condtional_tags do
       
       desc "Runs the migration of the ConditionalTags extension"
       task :migrate => :environment do
