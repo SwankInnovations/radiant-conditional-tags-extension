@@ -41,14 +41,14 @@ class ConditionalStatement
 #      puts
 #      puts "diced_conditional: " + diced_conditional.inspect
  
-      if diced_conditional.empty? || diced_conditional.length != 11
+      if diced_conditional.nil? || diced_conditional.length != 11
         @is_valid = false
-        @err_msg = "Conditional Statement not valid"
+        @err_msg = "invalid condition"
       elsif
         @is_valid = true
         @primary_element = evaluate_diced_element(diced_conditional[0, 5])
-        @comparison_type = evaluate_comparison_type(diced_conditional[5])
-        @comparison_element = evaluate_diced_element(diced_conditional[6, 5])
+        @comparison_type = evaluate_comparison_type(diced_conditional[5]) if valid?
+        @comparison_element = evaluate_diced_element(diced_conditional[6, 5]) if valid?
       end
     end
 
@@ -93,15 +93,16 @@ class ConditionalStatement
           ">="
         when 'lte'
           "<="
-        when 'not_equal?', '!=', '<>'
+        when 'is_not', 'not_equals', '!=', '<>'
           "!="
-        when 'equals?', '==', '='
+        when 'is', 'equals', '==', '='
           "=="
-        when 'matches?', 'matches', '=~'
+        when 'matches', '=~'
           "=~"
         else
           @is_valid = false
-          @err_msg = "invalid comparison (#{comparison_type})"
+          @err_msg = "invalid comparison (#{comparison_type}) in condition"
+          nil
       end
       
     end
