@@ -3,7 +3,6 @@ class ConditionalStatement
   attr_reader :primary_element,
               :comparison_type,
               :comparison_element,
-              :result,
               :err_msg
   
   def initialize(input_text, tag = nil)
@@ -16,6 +15,11 @@ class ConditionalStatement
   
   def valid?
     @is_valid
+  end
+
+
+  def true?
+    @result
   end
 
 
@@ -53,10 +57,10 @@ class ConditionalStatement
       case comparison_type.downcase
         when 'exists?'
           "exists?"
-        when 'blank?', 'is_blank?'
+        when 'blank?', 'is-blank?'
           "blank?"
-        when 'empty?', 'is_empty?'
-          "empty?"
+#        when 'empty?', 'is-empty?'
+#          "empty?"
         when 'gt'
           ">"
         when 'lt'
@@ -65,15 +69,15 @@ class ConditionalStatement
           ">="
         when 'lte'
           "<="
-#        when 'is_not', 'not_equals', '!=', '<>'
+#        when 'is-not', 'not-equals', '!=', '<>'
 #          "!="
         when 'is', 'equals', '==', '='
           "=="
         when 'matches', '=~'
           "=~"
-        when 'includes', 'includes_all'
+        when 'includes', 'includes-all'
           "(&&)"
-        when 'includes_any'
+        when 'includes-any'
           "(||)"
         else
           @is_valid = false
@@ -120,25 +124,22 @@ class ConditionalStatement
         when "content"
           if array_items.nil?
             # element must have been: "content"
-            part = "body"
-          elsif array_items.length != 1 
-            # element must have been like: "content[]" or "content[A, B, C]"
+            output = []
+            @tag.locals.page.parts.each do |part|
+              output << part.name
+            end
+          elsif array_items.length > 1 
+            # element must have been like: "content[A, B, C]"
             @is_valid = false
+            @err_msg = %{only one content tab can be named in "content[]" in condition "#{@input_text}"}
             return nil
           else
-            part = array_items.first
-          end
-          if @tag.locals.page.part(part)
+            # element is either content[] or content['some part']
+            part = array_items.first || "body"
             output = @tag.locals.page.part(part).content
           end
-          
-        when "parts"
-          output = []
-          @tag.locals.page.parts.each do |part|
-            output << part.name
-          end
 
-        when "parts.count"
+        when "content.count"
           output = @tag.locals.page.parts.length
           
         when "children.count"
@@ -221,21 +222,41 @@ class ConditionalStatement
         when "=~"
           begin
             @result = !!(primary_element =~ comparison_element)
-#              @result = true
-#            else
-#              @result = false
-#            end
           rescue TypeError
             @is_valid = false
-            @err_msg = %{element types in condition "#{@input_text}" cannot be compared using matching}
+            @err_msg = %{the elements in condition "#{@input_text}" cannot be compared using matching}
           end
           
         when ">"
           begin
             @result = primary_element > comparison_element
-          rescue TypeError
+          rescue
             @is_valid = false
-            @err_msg = %{element types in condition "#{@input_text}" cannot be compared using greater than}
+            @err_msg = %{the elements in condition "#{@input_text}" cannot be compared using greater-than}
+          end
+          
+        when ">="
+          begin
+            @result = primary_element >= comparison_element
+          rescue
+            @is_valid = false
+            @err_msg = %{the elements in condition "#{@input_text}" cannot be compared using greater-than-or-equal}
+          end
+          
+        when "<"
+          begin
+            @result = primary_element < comparison_element
+          rescue
+            @is_valid = false
+            @err_msg = %{the elements in condition "#{@input_text}" cannot be compared using less-than}
+          end
+          
+        when "<="
+          begin
+            @result = primary_element <= comparison_element
+          rescue
+            @is_valid = false
+            @err_msg = %{the elements in condition "#{@input_text}" cannot be compared using less-than-or-equal}
           end
           
       end

@@ -44,13 +44,13 @@ describe ConditionalStatement do
 #      { :input => "10 <> 5", :output => "!=" },
 #      { :input => "10 is_not 5", :output => "!=" },
 #      { :input => "10 not_equals 5", :output => "!=" },
-      
+#      
       { :input => "10 =~ 5", :output => "=~" },
       { :input => "10 matches 5", :output => "=~" },
       
       { :input => "10 includes 5", :output => "(&&)" },
-      { :input => "10 includes_all 5", :output => "(&&)" },
-      { :input => "10 includes_any 5", :output => "(||)" },
+      { :input => "10 includes-all 5", :output => "(&&)" },
+      { :input => "10 includes-any 5", :output => "(||)" },
       
       { :input => "10 gt 5", :output => ">" },
       { :input => "10 GT 5", :output => ">" },
@@ -65,11 +65,11 @@ describe ConditionalStatement do
       { :input => "10 LTE 5", :output => "<=" },
       
       { :input => "'test' blank?", :output => "blank?" },
-      { :input => "'test' is_blank?", :output => "blank?" },
+      { :input => "'test' is-blank?", :output => "blank?" },
       
-      { :input => "'test' empty?", :output => "empty?" },
-      { :input => "'test' is_empty?", :output => "empty?" },
-      
+#      { :input => "'test' empty?", :output => "empty?" },
+#      { :input => "'test' is-empty?", :output => "empty?" },
+#      
       { :input => "'test' exists?", :output => "exists?" }
     ].each do |current_cond|
       
@@ -333,7 +333,7 @@ describe ConditionalStatement do
     
     
     
-    describe "when the #{element_type.to_s.humanize.titlecase} is \"content\"" do
+    describe "when the #{element_type.to_s.humanize.titlecase} is \"content[]\"" do
 
       before :each do
         @tag = new_tag_mock
@@ -354,8 +354,9 @@ describe ConditionalStatement do
         
       end
         
-      it "should return the content of the \"body\" part (element is \"content\")" do
-        input_string = build_input_using("content", element_type)
+        
+      it "should return the content of the \"body\" part (element is \"content[]\")" do
+        input_string = build_input_using("content[]", element_type)
         conditional_statement = ConditionalStatement.new(input_string, @tag)
         
         conditional_statement.send(element_type).should ==
@@ -363,24 +364,35 @@ describe ConditionalStatement do
       end
         
         
-      it "should be invalid if an empty array is given (the element is \"content[]\")" do
+      it "should return nil if the page part named doesn't exist (element is \"content['bogus']\")" do
         input_string = build_input_using("content[]", element_type)
         conditional_statement = ConditionalStatement.new(input_string, @tag)
-        conditional_statement.should_not be_valid
+        
+        conditional_statement.send(element_type).should ==
+            @tag.locals.page.part("body").content
       end
-      
+        
+        
       it "should be invalid if multiple page parts are given (the element is \"content['item1', 'item2']\")" do
         input_string = build_input_using("content['body', 'other part']", element_type)
         conditional_statement = ConditionalStatement.new(input_string, @tag)
         conditional_statement.should_not be_valid
       end
-      
+        
+        
+      it "should produce an err_msg if multiple page parts are given (the element is \"content['item1', 'item2']\")" do
+        input_string = build_input_using("content['body', 'other part']", element_type)
+        conditional_statement = ConditionalStatement.new(input_string, @tag)
+        conditional_statement.err_msg.should ==
+            "only one content tab can be named in \"content[]\" in condition \"#{input_string}\""
+      end
+        
     end
 
 
 
 
-    describe "when the #{element_type.to_s.humanize.titlecase} is \"parts\"" do
+    describe "when the #{element_type.to_s.humanize.titlecase} is \"content\"" do
 
       before :each do
         @tag = new_tag_mock
@@ -390,8 +402,9 @@ describe ConditionalStatement do
         @tag.locals.page.stub!(:parts).and_return([part1, part2, part3])
       end
       
-      it "should return an array of page part names" do
-        input_string = build_input_using("parts", element_type)
+      
+      it "should return an array of page part names (element is \"content\")" do
+        input_string = build_input_using("content", element_type)
         conditional_statement = ConditionalStatement.new(input_string, @tag)
         
         conditional_statement.send(element_type).should == ["part 1", "part 2", "part 3"]
@@ -402,7 +415,7 @@ describe ConditionalStatement do
 
 
 
-    describe "when the #{element_type.to_s.humanize.titlecase} is \"parts.count\"" do
+    describe "when the #{element_type.to_s.humanize.titlecase} is \"content.count\"" do
 
       before :each do
         @tag = new_tag_mock
@@ -413,7 +426,7 @@ describe ConditionalStatement do
       end
       
       it "should return a the number of page parts" do
-        input_string = build_input_using("parts.count", element_type)
+        input_string = build_input_using("content.count", element_type)
         conditional_statement = ConditionalStatement.new(input_string, @tag)
         
         conditional_statement.send(element_type).should == 3

@@ -3,59 +3,75 @@ module ConditionalTags
   class TagError < StandardError; end
 
   desc %{     
-    Renders the contents of the tag if the @condition@ attribute evaluates as
-    TRUE. The @condition@ attribute (or simply @cond@) may include up to three
-    parts:
+    Renders the contents of the tag if the @cond@ attribute evaluates as
+    TRUE. The @cond@ attribute must be a valid conditional statement made up of:
     
-    * *Primary Symbol* - A value declaration or reference to a stored value (required)
-    * *Comparison Test* - Comparison operator (required pretty often)  
-
-        * If there is only a Primary Symbol, this value may be: 'exists?', 'blank?', 
-           'empty?' (or may be omitted -- implies 'exists?').
-        * If there are both Primary and Comparison Symbols, may be '=', '!=', 'gt', 'lt', 'gte', 
-          'lte', or 'matches'.
-    * *Comparison Symbol* - Same rules as Primary Symbol (may be ommitted in 
-      certain cases)
-    
-    Allowable Symbol Formats:
-    
-    * *String* - 'my unique string' or stringWithNoSpaces (note: if your string-with-spaces
-      also includes a single quote, use a second single quote as an escape character.
-      So, 'my unique string''s value' produces: "my unique string's value").
-    * *Number* - 1234 or -123.4
-    * *Boolean* - false or False or true or TRUE (boolean)
-    * *Compound Symbol* - page[title] or page.part[My Page Part] refrencing stored values
+    * *Primary Element* - This is one of two possible elements in the @cond and
+      is always required.
+    * *Comparison Type* - This tells how the *Primary Element* and *Comparison
+      Elements* should be compared with each other.  It is always required.
+    * *Comparison Element* - This element defines what to compare agains and is
+      either required or must be omitted depending on the *Comparison Type*. 
     
     *Usage:*
-    <pre><code><r:if condition="primarySymbol[ comparisonTest[ comparisonSymbol]]"] /></code></pre>
+    <pre><code><r:if condition="PrimaryElement ComparisonType[ ComparisonElement]"] /></code></pre>
 
+    *Kinds of Elements:*
+    * *Text* - 'My Text' Text must be surrounded by apostrophes. If you need
+      to use the apostrophe character in the text, use it twice to "escape" it
+      (i.e. 'Jim''s Text' produces: "Jim's Text").
+      So, 'my unique string''s value' produces: "my unique string's value").
+    * *Number* - 1234 or -123.4
+    * *True/False* - false or False or true or TRUE (boolean).
+    * *Nothing* - nothing, null, or nil (stands for non-existance)
+    * *RegExp* - /regexp/  Regular expressions are fancy tools to perform
+      matching against strings. You'd use these along with the "matches"
+      *Comparison Type*.
+    * *List* - ['some text', 'more text'] A lists is just a goup of Text, Number,
+      True/False, and/or Nothing elements.
+    * *Special Reference* - Like: title, part['my page part'], or children.count,
+      These elements refer to values about your site or its content.
+    
+    *Kinds of Comparisons*
+    * *equals* (also *is*, *=*, or *==) - Checks equality.
+    * *matches* (also *=~*) - Checks whether a regexp matches a string
+    * *gt* - Checks whether Primary Element is greater than the Comparison Element
+    * *lt* - Checks whether Primary Element is less than the Comparison Element
+    * *gte* - Checks whether Primary Element is greater than or equal to the Comparison Element
+    * *lte* - Checks whether Primary Element is less than or equal to the Comparison Element
+    * *includes* (also *includes-all*) - Checks whether all items in Comparison Element are found in Primary Element
+    * *includes-any* - Checks whether any of the items in Comparison Element are are found in Primary Element
+    
     *Examples:*
-    <pre><code><r:if condition="page.part[My Page Part] exists">...</r:if>
-       TRUE if this page has a page part named 'My Page Part'</code>
+    <code><r:if cond="title is 'My Page Title'">...</r:if>
+       TRUE if the page title is "My Page Title"</code>
 
-    <code><r:if cond="page.part[My Page Part]">...</r:if>
-       Shorter notation - same as the previous example</code>
+    <pre><code><r:if condition="content['some part'] exists?">...</r:if>
+       TRUE if this page has a content tab named "some part"</code>
 
-    <code><r:if cond="page.part[My Page Part] = ''">...</r:if>
-       TRUE if a page part named 'My Page Part' exists and is blank</code>
+    <code><r:if cond="content includes ['body', 'another part']">...</r:if>
+       TRUE if both "body" and "another part" are content tabs on the page</code>
 
-    <code><r:if cond="page[title] != 'My Page Title'">...</r:if>
-       TRUE if the page title is not 'My Page Title'</code>
+    <code><r:if cond="content includes ['body', 'another part']">...</r:if>
+       TRUE if either "body" or "another part" are content tabs on the page</code>
+
+    <code><r:if cond="url matches /products/">...</r:if>
+       TRUE if the page url includes the text "products"</code>
 
     <code><r:if cond="page[url] matches /.*/about/.*/">...</r:if>
        TRUE if the page's URL matches the Regexp: '*/about/.*'</code>
 
-    <code><r:if cond="children[count] lte 10">...</r:if>
+    <code><r:if cond="children.count lte 10">...</r:if>
        TRUE if the number of children is less than or equal to 10</code>
 
-    <code><r:if cond="vars[myVarName]">...</r:if>
-       TRUE if Page Title is not blank</code></pre>
   }
   tag 'if' do |tag|
     if (condition_string = tag.attr['condition']) || (condition_string = tag.attr['cond']) then
-      condition = ConditionalStatement.new(condition_string)
+      condition = ConditionalStatement.new(condition_string, tag)
       if condition.valid? then
         tag.expand if condition.true?
+      else
+        raise TagError.new("'if' tag error: #{condition.err_msg}")
       end
     else
       raise TagError.new("'if' tag must contain 'condition' attribute")
@@ -63,18 +79,23 @@ module ConditionalTags
   end
 
 
-#  desc %{     
-#    Opposite of the @if@ tag.
-#
-#    *Usage:*
-#    <pre><code><r:unless condition="primarySymbol[ comparisonTest[ comparisonSymbol]]"] /></code></pre>
-#  }
-#  tag 'unless' do |tag|
-#    if (condition_string = tag.attr['condition']) || (condition_string = tag.attr['cond']) then
-#      tag.expand unless parse_and_eval_condition(condition_string, tag)
-#    else
-#      raise TagError.new("'unless' tag must contain 'condition' attribute")
-#    end
-#  end
+  desc %{     
+    Opposite of the @if@ tag (see @if@ tag for details on usage)
+
+    *Usage:*
+    <pre><code><r:unless condition="primarySymbol[ comparisonTest[ comparisonSymbol]]"] /></code></pre>
+  }
+  tag 'unless' do |tag|
+    if (condition_string = tag.attr['condition']) || (condition_string = tag.attr['cond']) then
+      condition = ConditionalStatement.new(condition_string, tag)
+      if condition.valid? then
+        tag.expand unless condition.true?
+      else
+        raise TagError.new("'unless' tag error: #{condition.err_msg}")
+      end
+    else
+      raise TagError.new("'unless' tag must contain 'condition' attribute")
+    end
+  end
 
 end
