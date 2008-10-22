@@ -10,6 +10,20 @@ def build_input_using(element_value, element_type = :primary_element)
 end
 
 
+def new_tag_mock
+  local_page = mock("local page")
+  locals = mock("locals", :page => local_page)
+  global_page = mock("master page")
+  globals = mock("globals", :page => global_page)
+  tag = mock("tag")
+  tag.stub!(:globals).and_return(globals)
+  tag.stub!(:locals).and_return(locals)
+  tag
+end
+
+
+
+
 describe ConditionalStatement do
   
   it "should not permit insantiation without a paramter" do
@@ -33,7 +47,10 @@ describe ConditionalStatement do
       
       { :input => "10 =~ 5", :output => "=~" },
       { :input => "10 matches 5", :output => "=~" },
-      { :input => "10 matches 5", :output => "=~" },
+      
+      { :input => "10 includes 5", :output => "(&&)" },
+      { :input => "10 includes_all 5", :output => "(&&)" },
+      { :input => "10 includes_any 5", :output => "(||)" },
       
       { :input => "10 gt 5", :output => ">" },
       { :input => "10 GT 5", :output => ">" },
@@ -74,6 +91,9 @@ describe ConditionalStatement do
       
     end
   
+  
+  
+  
  
     [ { :input => "'string'", :output => "string" },
       { :input => " 'a string' ", :output => "a string" },
@@ -101,7 +121,15 @@ describe ConditionalStatement do
       { :input => " -10  ", :output => -10 },
       { :input => "  5.25 ", :output => 5.25 },
       { :input => "-5.25   ", :output => -5.25 },
-      { :input => "   +101.25", :output => 101.25 }
+      { :input => "   +101.25", :output => 101.25 },
+
+      { :input => "[]", :output => [] },
+      { :input => "[10, 11, 12]", :output => [10, 11, 12] },
+      { :input => "['a', 'b' ,'c']", :output => ['a', 'b', 'c'] },
+      { :input => "[true, FALSE, tRuE]", :output => [true, false, true] },
+      { :input => "[nil, null , NOTHING]", :output => [nil, nil, nil] },
+      { :input => "[10, 'b', TRUE]", :output => [10, 'b', true] }
+    
     ].each do |current_element|
       [ :primary_element, :comparison_element ].each do |element_type|
 
@@ -131,7 +159,7 @@ describe ConditionalStatement do
 
 
   
-  describe "with malformed conditions" do
+  describe "with invalid conditions" do
     [ "",
       "a b c d",
       "100",
@@ -147,7 +175,7 @@ describe ConditionalStatement do
           @conditional_statement.should_not be_valid
         end
         
-        it "should produce the error message: invalid condition \"#{condition}\"" do
+        it "should produce the proper error message" do
           @conditional_statement.err_msg.should == "invalid condition \"#{condition}\""
         end
         
@@ -159,7 +187,7 @@ describe ConditionalStatement do
   
   
   
-  describe "with valid input where the primary element" do
+  describe "with malformed conditions" do
     [ { :input => "'abc' /abc/ 12", :comparison => "/abc/" },
       { :input => "100 ??? 12", :comparison => "???"  },
     ].each do |condition|
@@ -174,8 +202,9 @@ describe ConditionalStatement do
           @conditional_statement.should_not be_valid
         end
         
-        it "should produce the error message: invalid comparison \"#{condition[:comparison]}\" in condition \"#{condition[:input]}\"" do
-          @conditional_statement.err_msg.should == "invalid comparison \"#{condition[:comparison]}\" in condition \"#{condition[:input]}\""
+        it "should produce the proper error message" do
+          @conditional_statement.err_msg.should ==
+              "invalid comparison \"#{condition[:comparison]}\" in condition \"#{condition[:input]}\""
         end
         
       end
@@ -186,63 +215,93 @@ describe ConditionalStatement do
   
   
   
-  describe "with conditions having malformed symbolic elements" do
-    [ { :input => "abc(ghi) = 12", :element => "abc(ghi)" },
-      { :input => "abc.[ghi] = 12", :element => "abc.[ghi]" },
-      { :input => "abc..def[ghi] = 12", :element => "abc..def[ghi]" },
-      { :input => "abc.def*[ghi] = 12", :element => "abc.def*[ghi]" },
-      { :input => "ab@c.def[ghi] = 12", :element => "ab@c.def[ghi]" }
-    ].each do |condition|
+  [ :primary_element, :comparison_element].each do |element_type|
 
-      describe "(#{condition[:input]})" do
-        
-        before :all do
-          @conditional_statement = ConditionalStatement.new(condition[:input])
+    [ "['g' 'h' 'i']",
+      "[ a ]",
+      "['a' ,  a  ]",
+      "[true\t 10]"
+    ].each do |element|
+
+      describe "with conditions having malformed array elements" do
+
+        before :each do
+          @input_string = build_input_using(element, element_type)
+          @conditional_statement = ConditionalStatement.new(@input_string)
         end
         
-        it "should not be valid" do
+        it "should not be valid (using: #{@input_string})" do
           @conditional_statement.should_not be_valid
         end
         
-        it "should produce the error message: invalid syntax for element \"#{condition[:element]}\" in condition \"#{condition[:input]}\"" do
+        it "should produce the proper error message" do
           @conditional_statement.err_msg.should == 
-              "invalid syntax for element \"#{condition[:element]}\" in condition \"#{condition[:input]}\""
+              "invalid array \"#{element}\" in condition \"#{@input_string}\""
         end
         
       end
-
-    end
-  end
-
-
-
-  describe "with conditions containing unknown symbolic elements" do
-    [ { :input => "abc.def[ghi] = 12", :element => "abc.def[ghi]" },
-      { :input => "jabber = wocky", :element => "jabber" },
-      { :input => "jub.jub[bird] = false", :element => "jub.jub[bird]" }
-    ].each do |condition|
-       describe "(#{condition[:input]})" do
-        
-        before :all do
-          @conditional_statement = ConditionalStatement.new(condition[:input])
-        end
-        
-        it "should not be valid" do
-          @conditional_statement.should_not be_valid
-        end
-        
-        it "should produce the error message: unable to evaluate element \"#{condition[:element]}\" in condition \"#{condition[:input]}\"" do
-          @conditional_statement.err_msg.should == 
-              "unable to evaluate element \"#{condition[:element]}\" in condition \"#{condition[:input]}\""
-        end
-        
-      end
-     
     end
       
+      
+      
+      
+    [ {:input => "abc.def['g' 'h' 'i']", :array => "['g' 'h' 'i']"},
+      {:input => "abc[a]", :array => "[a]"},
+      {:input => "abc['a', a]", :array => "['a', a]"},
+      {:input => "abc[true\t 10]", :array => "[true\t 10]"}
+    ].each do |element|
+
+      describe "with conditions having symbolic elements with malformed array elements" do
+
+        before :each do
+          @input_string = build_input_using(element[:input], element_type)
+          @conditional_statement = ConditionalStatement.new(@input_string)
+        end
+        
+        it "should not be valid (using: #{@input_string})" do
+          @conditional_statement.should_not be_valid
+        end
+        
+        it "should produce the proper error message" do
+          @conditional_statement.err_msg.should == 
+              "invalid array \"#{element[:array]}\" in condition \"#{@input_string}\""
+        end
+        
+      end
+    end
+    
+    
+    
+    
+    [ { :input => "abc.def[10]", :identifier => "abc.def" },
+      { :input => "jabber", :identifier => "jabber" },
+      { :input => "jub.jub['bird']", :identifier => "jub.jub" }
+    ].each do |element|
+          
+      describe "with conditions containing unknown symbolic element identifiers" do
+
+        before :all do
+          @input_string = build_input_using(element[:input], element_type)
+          @conditional_statement = ConditionalStatement.new(@input_string)
+        end
+        
+        it "should not be valid (using: #{@input_string})" do
+          @conditional_statement.should_not be_valid
+        end
+        
+        it "should produce the proper error message" do
+          @conditional_statement.err_msg.should == 
+              "unable to interpret element \"#{element[:identifier]}\" in condition \"#{@input_string}\""
+        end
+          
+      end
+        
+    end
+
+  
   end
 
-
+  
 
     
   [ :primary_element, :comparison_element].each do |element_type|
@@ -251,21 +310,20 @@ describe ConditionalStatement do
       describe "when the #{element_type.to_s.humanize.titlecase} is \"#{page_property}\"" do
         
         before :all do
-          page = mock("page")
-          page.stub!(:title).and_return('Gettysburg Address')
-          page.stub!(:url).and_return("http://loghome.il.gov")
-          page.stub!(:slug).and_return("/speeches/disregared/war")
-          page.stub!(:breadcrumb).and_return("4 Score +")
-          page.stub!(:author).and_return("Abraham Lincoln")
-          @page_binding = mock("page_binding", :page => page)
+          @tag = new_tag_mock
+          @tag.locals.page.stub!(:title).and_return('Gettysburg Address')
+          @tag.locals.page.stub!(:url).and_return("http://loghome.il.gov")
+          @tag.locals.page.stub!(:slug).and_return("/speeches/disregared/war")
+          @tag.locals.page.stub!(:breadcrumb).and_return("4 Score +")
+          @tag.locals.page.stub!(:author).and_return("Abraham Lincoln")
         end
   
         it "should return the value for page.#{page_property} (from the given page binding)" do
           input_string = build_input_using(page_property, element_type)
-          conditional_statement = ConditionalStatement.new(input_string, @page_binding)
+          conditional_statement = ConditionalStatement.new(input_string, @tag)
           
           conditional_statement.send(element_type).should ==
-              @page_binding.page.send(page_property)
+              @tag.locals.page.send(page_property)
         end
         
       end
@@ -273,96 +331,95 @@ describe ConditionalStatement do
     end
  
     
+    
+    
     describe "when the #{element_type.to_s.humanize.titlecase} is \"content\"" do
 
       before :each do
-        page = mock("page")
-        page.stub!(:part).with("body").and_return(mock("body", :content => "My Body's Content"))
-        page.stub!(:part).with("other part").and_return(mock("other", :content => "Some Other Content"))
-        page.stub!(:part).with("another part").and_return(mock("other", :content => "Some More Content"))
-        @page_binding = mock("page_binding", :page => page)
+        @tag = new_tag_mock
+        @tag.locals.page.stub!(:part).with("body").and_return(mock("body", :content => "My Body's Content"))
+        @tag.locals.page.stub!(:part).with("other part").and_return(mock("other", :content => "Some Other Content"))
+        @tag.locals.page.stub!(:part).with("another part").and_return(mock("other", :content => "Some More Content"))
       end
       
       ["body", "other part", "another part"]. each do |part|
         
-        it "should return the content of the \"#{part}\" part (element is \"content[#{part}]\")" do
-          input_string = build_input_using("content[#{part}]", element_type)
-          conditional_statement = ConditionalStatement.new(input_string, @page_binding)
+        it "should return the content of the \"#{part}\" part (element is \"content['#{part}']\")" do
+          input_string = build_input_using("content['#{part}']", element_type)
+          conditional_statement = ConditionalStatement.new(input_string, @tag)
           
           conditional_statement.send(element_type).should ==
-              @page_binding.page.send("part", part).content
+              @tag.locals.page.send("part", part).content
         end
         
       end
         
-      it "should return the content of the \"body\" part  (element is \"content[]\")" do
-        input_string = build_input_using("content[]", element_type)
-        conditional_statement = ConditionalStatement.new(input_string, @page_binding)
+      it "should return the content of the \"body\" part (element is \"content\")" do
+        input_string = build_input_using("content", element_type)
+        conditional_statement = ConditionalStatement.new(input_string, @tag)
         
         conditional_statement.send(element_type).should ==
-            @page_binding.page.part("body").content
+            @tag.locals.page.part("body").content
       end
         
+        
+      it "should be invalid if an empty array is given (the element is \"content[]\")" do
+        input_string = build_input_using("content[]", element_type)
+        conditional_statement = ConditionalStatement.new(input_string, @tag)
+        conditional_statement.should_not be_valid
+      end
+      
+      it "should be invalid if multiple page parts are given (the element is \"content['item1', 'item2']\")" do
+        input_string = build_input_using("content['body', 'other part']", element_type)
+        conditional_statement = ConditionalStatement.new(input_string, @tag)
+        conditional_statement.should_not be_valid
+      end
+      
     end
+
+
+
 
     describe "when the #{element_type.to_s.humanize.titlecase} is \"parts\"" do
 
       before :each do
+        @tag = new_tag_mock
         part1 = mock("part1", :name => "part 1")
         part2 = mock("part2", :name => "part 2")
         part3 = mock("part3", :name => "part 3")
-        page = mock("page", :parts => [part1, part2, part3])
-        @page_binding = mock("page_binding", :page => page)
+        @tag.locals.page.stub!(:parts).and_return([part1, part2, part3])
       end
       
-      it "should return a \";\" delimited list of the page parts" do
+      it "should return an array of page part names" do
         input_string = build_input_using("parts", element_type)
-        conditional_statement = ConditionalStatement.new(input_string, @page_binding)
+        conditional_statement = ConditionalStatement.new(input_string, @tag)
         
-        conditional_statement.send(element_type).should == "part 1;part 2;part 3"
+        conditional_statement.send(element_type).should == ["part 1", "part 2", "part 3"]
       end
         
     end
+
+
 
 
     describe "when the #{element_type.to_s.humanize.titlecase} is \"parts.count\"" do
 
       before :each do
+        @tag = new_tag_mock
         part1 = mock("part1", :name => "part 1")
         part2 = mock("part2", :name => "part 2")
         part3 = mock("part3", :name => "part 3")
-        page = mock("page", :parts => [part1, part2, part3])
-        @page_binding = mock("page_binding", :page => page)
+        @tag.locals.page.stub!(:parts).and_return([part1, part2, part3])
       end
       
       it "should return a the number of page parts" do
         input_string = build_input_using("parts.count", element_type)
-        conditional_statement = ConditionalStatement.new(input_string, @page_binding)
+        conditional_statement = ConditionalStatement.new(input_string, @tag)
         
         conditional_statement.send(element_type).should == 3
       end
         
     end
-
-
-  
-#    describe "when the #{element_type.to_s.humanize.titlecase} refers to \"children.count\"" do
-#
-#      before :each do
-#        page = mock("page")
-#        page.stub!(:children).and_return(mock("children", :count => 3))
-#        @page_binding = mock("page_binding", :page => page)
-#      end
-#      
-#      it "should return the number of child pages if element is \"children.count\"" do
-#        input_string = build_input_using("children.count", element_type)
-#        conditional_statement = ConditionalStatement.new(input_string, @page_binding)
-#        
-#        conditional_statement.send(element_type).should ==
-#            @page_binding.page.children.count
-#      end
-#      
-#    end
 
 
 
@@ -371,12 +428,11 @@ describe ConditionalStatement do
 
       it "should return \"dev\" if the site is in development mode" do
         Radiant::Config.stub!("[]").with('dev_host').and_return("some.development.domain")
-        page = mock("page")
-        page.stub!(:request).and_return(mock("host", :host => "some.development.domain"))
-        @page_binding = mock("page_binding", :page => page)
+        @tag = new_tag_mock
+        @tag.globals.page.stub!(:request).and_return(mock("host", :host => "some.development.domain"))
 
         input_string = build_input_using("mode", element_type)
-        conditional_statement = ConditionalStatement.new(input_string, @page_binding)
+        conditional_statement = ConditionalStatement.new(input_string, @tag)
         
         conditional_statement.send(element_type).should == "dev"
       end
@@ -384,24 +440,22 @@ describe ConditionalStatement do
       
       it "should return \"dev\" if dev_host config value is unavailable, and the request.host value is dev.*" do
         Radiant::Config.stub!("[]").with('dev_host').and_return(nil)
-        page = mock("page")
-        page.stub!(:request).and_return(mock("host", :host => "dev.some.site"))
-        @page_binding = mock("page_binding", :page => page)
+        @tag = new_tag_mock
+        @tag.globals.page.stub!(:request).and_return(mock("host", :host => "dev.some.site"))
 
         input_string = build_input_using("mode", element_type)
-        conditional_statement = ConditionalStatement.new(input_string, @page_binding)
+        conditional_statement = ConditionalStatement.new(input_string, @tag)
         
         conditional_statement.send(element_type).should == "dev"
       end
 
 
       it "should return \"live\" for all other reqest host values" do
-        page = mock("page")
-        page.stub!(:request).and_return(mock("host", :host => "some.site"))
-        @page_binding = mock("page_binding", :page => page)
+        @tag = new_tag_mock
+        @tag.globals.page.stub!(:request).and_return(mock("host", :host => "some.site"))
 
         input_string = build_input_using("mode", element_type)
-        conditional_statement = ConditionalStatement.new(input_string, @page_binding)
+        conditional_statement = ConditionalStatement.new(input_string, @tag)
         
         conditional_statement.send(element_type).should == "live"
       end
@@ -410,7 +464,4 @@ describe ConditionalStatement do
 
   end
     
-
-
-
 end
