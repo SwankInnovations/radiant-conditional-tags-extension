@@ -1,3 +1,4 @@
+module ConditionalTags
 class ConditionalStatement
   
   attr_reader :primary_element,
@@ -256,4 +257,5 @@ class ConditionalStatement
       end
     end
 
+end
 end
