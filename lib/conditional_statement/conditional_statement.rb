@@ -258,6 +258,4 @@ class ConditionalStatement
       end
     end
 
-
-
 end
