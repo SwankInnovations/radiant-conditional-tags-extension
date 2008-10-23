@@ -138,7 +138,7 @@ class ConditionalStatement
 
 
     def interpret_as_symbolic_element(identifier, list = nil)
-      element = SymbolicElement::Evaluator.evaluate(identifier, list, @input_text, @tag)
+      element = ConditionalTags::SymbolicElement.evaluate(identifier, list, @input_text, @tag)
       if element.nil?
         @is_valid = false
         @err_msg = %{unable to interpret element "#{identifier}" in condition "#{@input_text}"}

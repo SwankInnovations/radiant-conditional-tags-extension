@@ -1,5 +1,5 @@
-module SymbolicElement
-  class AbstractSymbolicElement
+module ConditionalTags
+  class AbstractEvaluator
     
     attr_reader :value, :err_msg
   

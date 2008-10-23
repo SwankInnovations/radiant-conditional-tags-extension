@@ -1,5 +1,5 @@
-module SymbolicElement
-  class ModeElement < AbstractSymbolicElement
+module ConditionalTags
+  class ModeEvaluator < AbstractEvaluator
 
     def initialize(identifier, list, full_condition, tag)
       if (dev_host = Radiant::Config['dev_host']) && (tag.globals.page.request.host == dev_host)

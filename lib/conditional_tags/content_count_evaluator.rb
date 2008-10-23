@@ -1,5 +1,5 @@
-module SymbolicElement
-  class ContentCountElement < AbstractSymbolicElement
+module ConditionalTags
+  class ContentCountEvaluator < AbstractEvaluator
 
     def initialize(identifier, list, full_condition, tag)
       @value = tag.locals.page.parts.length

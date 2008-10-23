@@ -1,5 +1,5 @@
-module SymbolicElement
-  class ContentElement < AbstractSymbolicElement
+module ConditionalTags
+  class ContentEvaluator < AbstractEvaluator
 
     def initialize(identifier, list = nil, full_condition = nil, tag = nil)
       if list.nil?
