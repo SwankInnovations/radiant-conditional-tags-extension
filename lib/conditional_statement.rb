@@ -44,7 +44,7 @@ class ConditionalStatement
       if split_input.nil? || split_input.length != 13
         @is_valid = false
         @err_msg = %{invalid condition "#{@input_text}"}
-      elsif
+      else
         @is_valid = true
         @primary_element = interpret_as_element(split_input[0],
                                                 split_input[1],
