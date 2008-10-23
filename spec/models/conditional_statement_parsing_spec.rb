@@ -236,7 +236,7 @@ describe ConditionalStatement do
         
         it "should produce the proper error message" do
           @conditional_statement.err_msg.should == 
-              "invalid array \"#{element}\" in condition \"#{@input_string}\""
+              "invalid list \"#{element}\" in condition \"#{@input_string}\""
         end
         
       end
@@ -264,7 +264,7 @@ describe ConditionalStatement do
         
         it "should produce the proper error message" do
           @conditional_statement.err_msg.should == 
-              "invalid array \"#{element[:array]}\" in condition \"#{@input_string}\""
+              "invalid list \"#{element[:array]}\" in condition \"#{@input_string}\""
         end
         
       end

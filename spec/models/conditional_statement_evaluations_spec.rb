@@ -351,5 +351,31 @@ describe ConditionalStatement do
 
 
 
+  describe "when using \"exists?\"" do
+    
+    it "should be valid and true if the primary element is not nil" do
+      conditional_statement = ConditionalStatement.new("5 exists?")
+      conditional_statement.should be_valid
+      conditional_statement.true?.should be_true
+    end
+    
+    
+    it "should be valid and false if the primary element is nil" do
+      conditional_statement = ConditionalStatement.new("nil exists?")
+      conditional_statement.should be_valid
+      conditional_statement.true?.should be_false
+    end
+
+    
+    it "should be invalid and provide the proper err_msg if a comparison element is provided" do
+      conditional_statement = ConditionalStatement.new("10 exists? 'tree'")
+      conditional_statement.should_not be_valid
+      conditional_statement.err_msg.should == 
+          %{the "exists?" comparison in condition "10 exists? 'tree'" may not have a following comparison element}
+    end
+    
+    
+  end
+
 
 end

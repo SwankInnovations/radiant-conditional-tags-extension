@@ -35,8 +35,8 @@ class ConditionalStatement
                 '|' +
                 '(nil|null|nothing)' + # [3] nil
                 '|' +
-                '([^\s\]\[]+)?' +      # [4] number or symbolic element w/o array
-                '(?:\[([^\]]*)\])?' +  # [5] array, or array for symbolic element
+                '([^\s\]\[]+)?' +      # [4] number or symbolic element w/o list
+                '(?:\[([^\]]*)\])?' +  # [5] array, or list for symbolic element
                 ")"
       condition_type = "([^\s]+)"
       diced_conditional = @input_text.scan(%r{\A\s*#{element}\s+#{condition_type}(?:\s+#{element})?\s*\Z}i).first
@@ -195,7 +195,7 @@ class ConditionalStatement
                   # parsed item doesn't match a valid type
                   items = nil
                   @is_valid = false
-                  @err_msg = %{invalid array "[#{items_list}]" in condition "#{@input_text}"}
+                  @err_msg = %{invalid list "[#{items_list}]" in condition "#{@input_text}"}
                   break
                 end
             end
@@ -204,7 +204,7 @@ class ConditionalStatement
           # characters remaining in items_list that don't parse into an item
           items = nil
           @is_valid = false
-          @err_msg = %{invalid array "[#{items_list}]" in condition "#{@input_text}"}
+          @err_msg = %{invalid list "[#{items_list}]" in condition "#{@input_text}"}
           break
         end
       end
@@ -259,6 +259,13 @@ class ConditionalStatement
             @err_msg = %{the elements in condition "#{@input_text}" cannot be compared using less-than-or-equal}
           end
           
+        when "exists?"
+          if comparison_element
+            @is_valid = false
+            @err_msg = %{the "exists?" comparison in condition "#{@input_text}" may not have a following comparison element}
+          else
+            @result = !primary_element.nil?
+          end
       end
     end
 
