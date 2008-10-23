@@ -26,7 +26,7 @@ class ConditionalStatement
   private
 
     def parse_and_interpret_input_text
-      element = "(?:" +
+      element_regexp = "(?:" +
                 "'((?:[^']|'')*)'" +   # [0] string (surrounded by "'")
                 '|' +
                 '/((?:[^/]|\\/)+)/' +  # [1] regexp (surounded by "/")
@@ -35,20 +35,30 @@ class ConditionalStatement
                 '|' +
                 '(nil|null|nothing)' + # [3] nil
                 '|' +
-                '([^\s\]\[]+)?' +      # [4] number or symbolic element w/o list
+                '([^\s\'\/\]\[]+)?' +      # [4] number or symbolic element w/o list
                 '(?:\[([^\]]*)\])?' +  # [5] array, or list for symbolic element
                 ")"
-      condition_type = "([^\s]+)"
-      diced_conditional = @input_text.scan(%r{\A\s*#{element}\s+#{condition_type}(?:\s+#{element})?\s*\Z}i).first
+      condition_type_regexp = "([^\s]+)"
+      split_input = @input_text.scan(%r{\A\s*#{element_regexp}\s+#{condition_type_regexp}(?:\s+#{element_regexp})?\s*\Z}i).first
 
-      if diced_conditional.nil? || diced_conditional.length != 13
+      if split_input.nil? || split_input.length != 13
         @is_valid = false
         @err_msg = %{invalid condition "#{@input_text}"}
       elsif
         @is_valid = true
-        @primary_element = interpret_as_element(diced_conditional[0, 6])
-        @comparison_type = interpret_comparison_type(diced_conditional[6]) if valid?
-        @comparison_element = interpret_as_element(diced_conditional[7, 6]) if valid?
+        @primary_element = interpret_as_element(split_input[0],
+                                                split_input[1],
+                                                split_input[2],
+                                                split_input[3],
+                                                split_input[4],
+                                                split_input[5])
+        @comparison_type = interpret_comparison_type(split_input[6]) if valid?
+        @comparison_element = interpret_as_element(split_input[7],
+                                                   split_input[8],
+                                                   split_input[9],
+                                                   split_input[10],
+                                                   split_input[11],
+                                                   split_input[12]) if valid?
       end
     end
 
@@ -87,82 +97,61 @@ class ConditionalStatement
     end
 
 
-    def interpret_as_element(element_bits)
-      if element_bits[0]
-        element_bits[0].gsub("''", "'")
-      elsif element_bits[1]
-        Regexp.new(element_bits[1])
-      elsif element_bits[2]
-        element_bits[2].downcase == "true"
-      elsif element_bits[3]
+    def interpret_as_element(string_text,
+                             regexp_text,
+                             boolean_text,
+                             nil_text,
+                             undetermined_text,
+                             array_text)
+      if array_text
+        array = build_array(array_text)
+        return unless valid?
+      end
+      
+      if string_text
+        string_text.gsub("''", "'")
+
+      elsif regexp_text
+        Regexp.new(regexp_text)
+
+      elsif boolean_text
+        boolean_text.downcase == "true"
+
+      elsif nil_text
         nil
-      elsif element_bits[4] && element_bits[5]
-        interpret_symbolic_element(element_bits[4], element_bits[5])
-      elsif element_bits[4]
-        # try to cast as float
-        if (Float(element_bits[4]) rescue false)
-          element_bits[4].to_f
+      elsif undetermined_text && array
+        interpret_as_symbolic_element(undetermined_text, array)
+
+      elsif undetermined_text
+        if (Float(undetermined_text) rescue false)
+          undetermined_text.to_f
         else
-          #here's our fancy schmancy element... 
-          interpret_symbolic_element(element_bits[4])
+          interpret_as_symbolic_element(undetermined_text)
         end
-      elsif element_bits[5]
-        build_array(element_bits[5])
+
+      elsif array
+        array
       else
         nil
       end
     end
 
 
-    def interpret_symbolic_element(identifier, array_item_list = nil)
-      array_items = build_array(array_item_list) unless array_item_list.nil?
-      return unless valid?
-      case identifier
-        when "title", "slug", "url", "breadcrumb", "author"
-          output = @tag.locals.page.send(identifier)
-
-        when "content"
-          if array_items.nil?
-            # element must have been: "content"
-            output = []
-            @tag.locals.page.parts.each do |part|
-              output << part.name
-            end
-          elsif array_items.length > 1 
-            # element must have been like: "content[A, B, C]"
-            @is_valid = false
-            @err_msg = %{only one content tab can be named in "content[]" in condition "#{@input_text}"}
-            return nil
-          else
-            # element is either content[] or content['some part']
-            part = array_items.first || "body"
-            output = @tag.locals.page.part(part).content
-          end
-
-        when "content.count"
-          output = @tag.locals.page.parts.length
-          
-        when "children.count"
-          
-        when "mode"
-          if (dev_host = Radiant::Config['dev_host']) && (@tag.globals.page.request.host == dev_host)
-            output = "dev"
-          elsif @tag.globals.page.request.host =~ /^dev\./
-            output = "dev"
-          else
-            output = "live"
-          end
-        
-      end
+    def interpret_as_symbolic_element(identifier, list = nil)
+#      list = build_array(list_string) unless list_string.nil?
       
-      if output
-        output
-      else
+      element = Conditionals::SymbolicElements.evaluate(identifier, list, @input_text, @tag)
+      if element.nil?
         @is_valid = false
         @err_msg = %{unable to interpret element "#{identifier}" in condition "#{@input_text}"}
         nil
+      elsif element.valid?
+        element.value
+      else
+        @is_valid = false
+        @err_msg = element.err_msg
+        nil
       end
-      
     end
 
   

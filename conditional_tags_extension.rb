@@ -8,6 +8,7 @@ class ConditionalTagsExtension < Radiant::Extension
   
   def activate
     Page.send :include, ConditionalTags
+    Conditionals::SymbolicElements.new
   end
   
   def deactivate
