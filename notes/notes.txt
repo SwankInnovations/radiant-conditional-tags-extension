@@ -1,2 +1,0 @@
-Condition
-logical statement
