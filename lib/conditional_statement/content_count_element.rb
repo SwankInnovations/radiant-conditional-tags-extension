@@ -1,4 +1,4 @@
-module Conditionals
+module SymbolicElement
   class ContentCountElement < AbstractSymbolicElement
 
     def initialize(identifier, list, full_condition, tag)

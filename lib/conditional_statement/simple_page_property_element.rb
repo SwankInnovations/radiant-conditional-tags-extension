@@ -1,4 +1,4 @@
-module Conditionals
+module SymbolicElement
   class SimplePagePropertyElement < AbstractSymbolicElement
 
     def initialize(identifier, list, full_condition, tag)

@@ -1,4 +1,4 @@
-module Conditionals
+module SymbolicElement
   class AbstractSymbolicElement
     
     attr_reader :value, :err_msg

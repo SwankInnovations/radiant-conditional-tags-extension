@@ -35,7 +35,7 @@ class ConditionalStatement
                 '|' +
                 '(nil|null|nothing)' + # [3] nil
                 '|' +
-                '([^\s\'\/\]\[]+)?' +      # [4] number or symbolic element w/o list
+                '([^\s\'\/\]\[]+)?' +  # [4] number or symbolic element w/o list
                 '(?:\[([^\]]*)\])?' +  # [5] array, or list for symbolic element
                 ")"
       condition_type_regexp = "([^\s]+)"
@@ -138,9 +138,7 @@ class ConditionalStatement
 
 
     def interpret_as_symbolic_element(identifier, list = nil)
-#      list = build_array(list_string) unless list_string.nil?
-      
-      element = Conditionals::SymbolicElements.evaluate(identifier, list, @input_text, @tag)
+      element = SymbolicElement::Evaluator.evaluate(identifier, list, @input_text, @tag)
       if element.nil?
         @is_valid = false
         @err_msg = %{unable to interpret element "#{identifier}" in condition "#{@input_text}"}

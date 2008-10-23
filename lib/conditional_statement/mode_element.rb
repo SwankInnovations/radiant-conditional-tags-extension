@@ -1,4 +1,4 @@
-module Conditionals
+module SymbolicElement
   class ModeElement < AbstractSymbolicElement
 
     def initialize(identifier, list, full_condition, tag)

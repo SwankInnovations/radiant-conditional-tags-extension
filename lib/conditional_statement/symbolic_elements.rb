@@ -1,5 +1,5 @@
-module Conditionals
-  class SymbolicElements
+module SymbolicElement
+  class Evaluator
     
     @@identifiers_by_string = {}
     @@instance = nil
@@ -9,21 +9,21 @@ module Conditionals
         # only initialize once
         @@instance = self
   
-        SymbolicElements.register_evaluator("title", SimplePagePropertyElement)
-        SymbolicElements.register_evaluator("slug", SimplePagePropertyElement)
-        SymbolicElements.register_evaluator("url", SimplePagePropertyElement)
-        SymbolicElements.register_evaluator("breadcrumb", SimplePagePropertyElement)
-        SymbolicElements.register_evaluator("author", SimplePagePropertyElement)
-        SymbolicElements.register_evaluator("content", ContentElement)
-        SymbolicElements.register_evaluator("content.count", ContentCountElement)
-        SymbolicElements.register_evaluator("mode", ModeElement)
+        Evaluator.register_element("title", SimplePagePropertyElement)
+        Evaluator.register_element("slug", SimplePagePropertyElement)
+        Evaluator.register_element("url", SimplePagePropertyElement)
+        Evaluator.register_element("breadcrumb", SimplePagePropertyElement)
+        Evaluator.register_element("author", SimplePagePropertyElement)
+        Evaluator.register_element("content", ContentElement)
+        Evaluator.register_element("content.count", ContentCountElement)
+        Evaluator.register_element("mode", ModeElement)
       end
     end
     
     class << self
       
       
-      def register_evaluator(matcher, evaluator_class)
+      def register_element(matcher, evaluator_class)
         # instantiate the class (in case an extension tries to register an evaluator before we did ours)
         @@instance ||= new
         if matcher.class == String
