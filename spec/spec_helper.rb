@@ -18,6 +18,30 @@ if File.directory?(File.dirname(__FILE__) + "/matchers")
   Dir[File.dirname(__FILE__) + "/matchers/*.rb"].each {|file| require file }
 end
 
+
+def build_input_using(element_value, element_type = :primary_element)
+  if element_type == :primary_element
+    input_string = element_value.to_s + " == 'ignore this'"
+  else
+    input_string = "'ignore this' == " + element_value.to_s        
+  end
+end
+
+
+def new_tag_mock
+  local_page = mock("local page")
+  locals = mock("locals", :page => local_page)
+  global_page = mock("master page")
+  globals = mock("globals", :page => global_page)
+  tag = mock("tag")
+  tag.stub!(:globals).and_return(globals)
+  tag.stub!(:locals).and_return(locals)
+  tag
+end
+
+
+
+
 Spec::Runner.configure do |config|
   # config.use_transactional_fixtures = true
   # config.use_instantiated_fixtures  = false

@@ -9,7 +9,6 @@ module ConditionalTags
       def initialize_registry
         unless @@registry_initialized
           @@registry_initialized = true
-          puts "initializing"
           SymbolicElement.register_evaluator("title", ConditionalTags::SimplePagePropertyEvaluator)
           SymbolicElement.register_evaluator("slug", ConditionalTags::SimplePagePropertyEvaluator)
           SymbolicElement.register_evaluator("url", ConditionalTags::SimplePagePropertyEvaluator)
@@ -18,6 +17,7 @@ module ConditionalTags
           SymbolicElement.register_evaluator("content", ConditionalTags::ContentEvaluator)
           SymbolicElement.register_evaluator("content.count", ConditionalTags::ContentCountEvaluator)
           SymbolicElement.register_evaluator("mode", ConditionalTags::ModeEvaluator)
+          SymbolicElement.register_evaluator("status", ConditionalTags::StatusEvaluator)
         end
       end
       
