@@ -6,5 +6,6 @@ class ConditionalTagsExtension < Radiant::Extension
   def activate
     Page.send :include, ConditionalTags
     ConditionalTags::SymbolicElement.initialize_registry
+    require File.dirname(__FILE__) + '/lib/wacky_radius'
   end
 end
