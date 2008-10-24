@@ -2,31 +2,29 @@ module ConditionalTags
   class SymbolicElement
     
     @@identifiers_by_string = {}
-    @@instance = nil
+    @@registry_initialized = nil
 
-    def initialize
-      if @@instance.nil?
-        # only initialize once
-        @@instance = self
-  
-        SymbolicElement.register_evaluator("title", SimplePagePropertyEvaluator)
-        SymbolicElement.register_evaluator("slug", SimplePagePropertyEvaluator)
-        SymbolicElement.register_evaluator("url", SimplePagePropertyEvaluator)
-        SymbolicElement.register_evaluator("breadcrumb", SimplePagePropertyEvaluator)
-        SymbolicElement.register_evaluator("author", SimplePagePropertyEvaluator)
-        SymbolicElement.register_evaluator("content", ContentEvaluator)
-        SymbolicElement.register_evaluator("content.count", ContentCountEvaluator)
-        SymbolicElement.register_evaluator("mode", ModeEvaluator)
-      end
-    end
-    
-    
     class << self
+      
+      def initialize_registry
+        unless @@registry_initialized
+          @@registry_initialized = true
+          puts "initializing"
+          SymbolicElement.register_evaluator("title", ConditionalTags::SimplePagePropertyEvaluator)
+          SymbolicElement.register_evaluator("slug", ConditionalTags::SimplePagePropertyEvaluator)
+          SymbolicElement.register_evaluator("url", ConditionalTags::SimplePagePropertyEvaluator)
+          SymbolicElement.register_evaluator("breadcrumb", ConditionalTags::SimplePagePropertyEvaluator)
+          SymbolicElement.register_evaluator("author", ConditionalTags::SimplePagePropertyEvaluator)
+          SymbolicElement.register_evaluator("content", ConditionalTags::ContentEvaluator)
+          SymbolicElement.register_evaluator("content.count", ConditionalTags::ContentCountEvaluator)
+          SymbolicElement.register_evaluator("mode", ConditionalTags::ModeEvaluator)
+        end
+      end
       
       
       def register_evaluator(matcher, evaluator_class)
-        # instantiate the class (in case an extension tries to register an evaluator before we did ours)
-        @@instance ||= new
+        # ensure that the registry has been initilized
+        initialize_registry
         if matcher.class == String
             unless @@identifiers_by_string.has_key? matcher
               @@identifiers_by_string[matcher] = evaluator_class
