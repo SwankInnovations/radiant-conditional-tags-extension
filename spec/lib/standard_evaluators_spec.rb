@@ -2,19 +2,19 @@ require File.dirname(__FILE__) + '/../spec_helper'
 
 
 module ConditionalTags
-  describe ConditionalStatement do
+  describe "StandardEvaluators" do
 
     [ :primary_element, :comparison_element].each do |element_type|
       [:title, :slug, :url, :breadcrumb, :author].each do |page_property|
   
-        describe "when the #{element_type.to_s.humanize.titlecase} is \"#{page_property}\"" do
+        describe "where the #{element_type.to_s.humanize.titlecase} is \"#{page_property}\"" do
           
           before :all do
             @tag = new_tag_mock
             @tag.locals.page.stub!(:title).and_return('Gettysburg Address')
             @tag.locals.page.stub!(:url).and_return("http://loghome.il.gov")
             @tag.locals.page.stub!(:slug).and_return("/speeches/disregared/war")
-            @tag.locals.page.stub!(:breadcrumb).and_return("4 Score +")
+            @tag.locals.page.stub!(:breadcrumb).and_return("4 Score")
             @tag.locals.page.stub!(:author).and_return("Abraham Lincoln")
           end
     
@@ -33,7 +33,7 @@ module ConditionalTags
       
       
       
-      describe "when the #{element_type.to_s.humanize.titlecase} is \"content[]\"" do
+      describe "where the #{element_type.to_s.humanize.titlecase} is \"content\"" do
   
         before :each do
           @tag = new_tag_mock
@@ -49,27 +49,32 @@ module ConditionalTags
             conditional_statement = ConditionalStatement.new(input_string, @tag)
             
             conditional_statement.send(element_type).should ==
-                @tag.locals.page.send("part", part).content
+                @tag.locals.page.part(part).content
           end
           
         end
           
           
-        it "should return the content of the \"body\" part (element is \"content[]\")" do
+        it "should be invalid if no page part is given (element is \"content[]\")" do
           input_string = build_input_using("content[]", element_type)
           conditional_statement = ConditionalStatement.new(input_string, @tag)
-          
-          conditional_statement.send(element_type).should ==
-              @tag.locals.page.part("body").content
+          conditional_statement.should_not be_valid
         end
           
           
-        it "should return nil if the page part named doesn't exist (element is \"content['bogus']\")" do
+        it "should produce an err_msg if no page part is given (element is \"content[]\")" do
           input_string = build_input_using("content[]", element_type)
           conditional_statement = ConditionalStatement.new(input_string, @tag)
+          conditional_statement.err_msg.should ==
+              "Error in condition \"#{input_string}\" (part name not given)."
+        end
+
+        
+        it "should return nil if the page part named doesn't exist (element is \"content['bogus part']\")" do
+          input_string = build_input_using("content['bogus part']", element_type)
+          conditional_statement = ConditionalStatement.new(input_string, @tag)
           
-          conditional_statement.send(element_type).should ==
-              @tag.locals.page.part("body").content
+          conditional_statement.send(element_type).should == nil
         end
           
           
@@ -84,15 +89,23 @@ module ConditionalTags
           input_string = build_input_using("content['body', 'other part']", element_type)
           conditional_statement = ConditionalStatement.new(input_string, @tag)
           conditional_statement.err_msg.should ==
-              "only one content tab can be named in \"content[]\" in condition \"#{input_string}\""
+              "Error in condition \"#{input_string}\" (too many parts given - only 1 allowed)."
         end
-          
+        
+        
+        it 'should return the content of the "body" part if no index is given (the element is "content")' do
+            input_string = build_input_using("content", element_type)
+            conditional_statement = ConditionalStatement.new(input_string, @tag)
+            
+            conditional_statement.send(element_type).should ==
+                @tag.locals.page.part("body").content
+        end
       end
   
   
   
   
-      describe "when the #{element_type.to_s.humanize.titlecase} is \"content\"" do
+      describe "where the #{element_type.to_s.humanize.titlecase} is \"part-names\"" do
   
         before :each do
           @tag = new_tag_mock
@@ -103,8 +116,8 @@ module ConditionalTags
         end
         
         
-        it "should return an array of page part names (element is \"content\")" do
-          input_string = build_input_using("content", element_type)
+        it "should return an array of page part names (element is \"part-names\")" do
+          input_string = build_input_using("part-names", element_type)
           conditional_statement = ConditionalStatement.new(input_string, @tag)
           
           conditional_statement.send(element_type).should == ["part 1", "part 2", "part 3"]
@@ -115,7 +128,7 @@ module ConditionalTags
   
   
   
-      describe "when the #{element_type.to_s.humanize.titlecase} is \"content.count\"" do
+      describe "where the #{element_type.to_s.humanize.titlecase} is \"content.count\"" do
   
         before :each do
           @tag = new_tag_mock
@@ -137,14 +150,14 @@ module ConditionalTags
   
   
   
-      describe "when the #{element_type.to_s.humanize.titlecase} is \"mode\"" do
+      describe "where the #{element_type.to_s.humanize.titlecase} is \"site-mode\"" do
   
         it "should return \"dev\" if the site is in development mode" do
           Radiant::Config.stub!("[]").with('dev_host').and_return("some.development.domain")
           @tag = new_tag_mock
           @tag.globals.page.stub!(:request).and_return(mock("host", :host => "some.development.domain"))
   
-          input_string = build_input_using("mode", element_type)
+          input_string = build_input_using("site-mode", element_type)
           conditional_statement = ConditionalStatement.new(input_string, @tag)
           
           conditional_statement.send(element_type).should == "dev"
@@ -156,7 +169,7 @@ module ConditionalTags
           @tag = new_tag_mock
           @tag.globals.page.stub!(:request).and_return(mock("host", :host => "dev.some.site"))
   
-          input_string = build_input_using("mode", element_type)
+          input_string = build_input_using("site-mode", element_type)
           conditional_statement = ConditionalStatement.new(input_string, @tag)
           
           conditional_statement.send(element_type).should == "dev"
@@ -167,7 +180,7 @@ module ConditionalTags
           @tag = new_tag_mock
           @tag.globals.page.stub!(:request).and_return(mock("host", :host => "some.site"))
   
-          input_string = build_input_using("mode", element_type)
+          input_string = build_input_using("site-mode", element_type)
           conditional_statement = ConditionalStatement.new(input_string, @tag)
           
           conditional_statement.send(element_type).should == "live"
@@ -177,7 +190,8 @@ module ConditionalTags
   
 
     
-      describe "when the #{element_type.to_s.humanize.titlecase} is \"status\"" do
+    
+      describe "where the #{element_type.to_s.humanize.titlecase} is \"status\"" do
   
         it "should return \"draft\" if the page.status is 1" do
           @tag = new_tag_mock

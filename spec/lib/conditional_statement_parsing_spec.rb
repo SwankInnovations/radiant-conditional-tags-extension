@@ -18,11 +18,6 @@ module ConditionalTags
         { :input => "10 is 5", :output => "==" },
         { :input => "10 equals 5", :output => "==" },
         
-  #      { :input => "10 != 5", :output => "!=" },
-  #      { :input => "10 <> 5", :output => "!=" },
-  #      { :input => "10 is_not 5", :output => "!=" },
-  #      { :input => "10 not_equals 5", :output => "!=" },
-  #      
         { :input => "10 =~ 5", :output => "=~" },
         { :input => "10 matches 5", :output => "=~" },
         
@@ -45,9 +40,6 @@ module ConditionalTags
         { :input => "'test' blank?", :output => "blank?" },
         { :input => "'test' is-blank?", :output => "blank?" },
         
-  #      { :input => "'test' empty?", :output => "empty?" },
-  #      { :input => "'test' is-empty?", :output => "empty?" },
-  #      
         { :input => "'test' exists?", :output => "exists?" }
       ].each do |current_cond|
         
@@ -269,7 +261,7 @@ module ConditionalTags
           
           it "should produce the proper error message" do
             @conditional_statement.err_msg.should == 
-                "unable to interpret element \"#{element[:identifier]}\" in condition \"#{@input_string}\""
+                "Error in condition \"#{@input_string}\" (cannot interpret element \"#{element[:identifier]}\")"
           end
             
         end
