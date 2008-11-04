@@ -1,5 +1,5 @@
 module ConditionalTags
-  class SymbolicElement
+  class CustomElement
     
     attr_reader :value, :identifier, :index
 
@@ -16,7 +16,7 @@ module ConditionalTags
           element_info[:index] = @index if @index
           @value = evaluator.call(tag, element_info)
       else
-        raise InvalidSymbolicElement,
+        raise InvalidCustomElement,
               "(cannot interpret element \"#{@identifier}\")"
       end
     end
@@ -43,7 +43,7 @@ module ConditionalTags
           end
         else
           raise TypeError,
-                "When registering a SymbolicElementEvaluator, the identifier parameter must be a string"
+                "When registering a CustomElementEvaluator, the identifier parameter must be a string"
         end
       end
 

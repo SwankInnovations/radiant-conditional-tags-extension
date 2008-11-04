@@ -173,7 +173,7 @@ module ConditionalTags
         {:input => "[true\t 10]", :array => "[true\t 10]"}
       ].each do |element|
   
-        describe "with conditions having malformed array elements" do
+        describe "where conditions have malformed array elements" do
   
           it "should raise the proper error & message" do
             @input_string = build_input_using(element[:input], element_type)
@@ -190,15 +190,14 @@ module ConditionalTags
       
       
       [ { :input => "abc.def[7 up]", :identifier => "abc.def" },
-        { :input => "jabber[wocky]", :identifier => "jabber" },
+        { :input => "jabber['wocky']", :identifier => "jabber" },
         { :input => "jub.jub", :identifier => "jub.jub" },
         { :input => "jub[10].jub[15]", :identifier => "jub[10].jub" },
         { :input => "function(some value).with_an[index value]",
           :identifier => "function(some value).with_an" }
       ].each do |element|
             
-        describe "with conditions containing unknown symbolic element identifiers" do
-  
+        describe "where conditions contain unknown custom element identifiers" do
           it "should raise the proper error & message" do
             @input_string = build_input_using(element[:input], element_type)
             lambda {ConditionalStatement.new(@input_string)}.
@@ -206,33 +205,10 @@ module ConditionalTags
                                    "Error in condition \"#{@input_string}\" " +
                                    "(cannot interpret element \"#{element[:identifier]}\")")
           end
-          
         end
           
       end
   
-
-
-    
-      [ { :input => "abc.def[10]", :identifier => "abc.def" },
-        { :input => "jabber", :identifier => "jabber" },
-        { :input => "jub.jub['bird']", :identifier => "jub.jub" }
-      ].each do |element|
-            
-        describe "with conditions containing unknown symbolic element identifiers" do
-  
-          it "should raise the proper error & message" do
-            @input_string = build_input_using(element[:input], element_type)
-            lambda {ConditionalStatement.new(@input_string)}.
-                should raise_error(InvalidConditionalStatement,
-                                   "Error in condition \"#{@input_string}\" " +
-                                   "(cannot interpret element \"#{element[:identifier]}\")")
-          end
-          
-        end
-          
-      end
-
     end
   
   end

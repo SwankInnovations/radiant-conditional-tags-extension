@@ -5,6 +5,6 @@ class ConditionalTagsExtension < Radiant::Extension
   
   def activate
     Page.send :include, ConditionalTags
-    ConditionalTags::SymbolicElement.initialize_registry
+    ConditionalTags::CustomElement.initialize_registry
   end
 end

@@ -11,7 +11,7 @@ module ConditionalTags
         if index_setting == :no_index_allowed
           updated_block = lambda do |tag, element|
             if element.has_key? :index
-              raise InvalidSymbolicElement,
+              raise InvalidCustomElement,
                   "(#{identifier} cannot include an index)."
             end
             block.call(tag, element)
@@ -19,7 +19,7 @@ module ConditionalTags
         else
           updated_block = block
         end
-        ConditionalTags::SymbolicElement.register_evaluator(identifier, updated_block)
+        ConditionalTags::CustomElement.register_evaluator(identifier, updated_block)
       end
     end
   

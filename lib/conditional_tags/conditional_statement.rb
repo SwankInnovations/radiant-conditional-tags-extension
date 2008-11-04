@@ -1,6 +1,6 @@
 module ConditionalTags
   
-  class InvalidSymbolicElement < StandardError; end
+  class InvalidCustomElement < StandardError; end
 
   class ConditionalStatement
   
@@ -17,7 +17,7 @@ module ConditionalTags
       rescue InvalidConditionalStatement
         raise InvalidConditionalStatement,
               "Error in condition \"#{@input_text}\" #{$!}"
-      rescue InvalidSymbolicElement
+      rescue InvalidCustomElement
         raise InvalidConditionalStatement,
               "Error in condition \"#{@input_text}\" #{$!}"
       end
@@ -43,7 +43,7 @@ module ConditionalTags
                   '|' +
                   '(nil|null|nothing)' + # [4] nil
                   '|' +
-                  '((?:(?:\[[^\]]*\])|(?:\([^\)]*\))|[^\s\(\)\[\]])+)' + # [5] number, list, or symbolic element
+                  '((?:(?:\[[^\]]*\])|(?:\([^\)]*\))|[^\s\(\)\[\]])+)' + # [5] number, list, or custom element
                   ")"
         condition_type_regexp = "([^\s]+)"
         split_input = @input_text.scan(%r{\A\s*#{element_regexp}\s+#{condition_type_regexp}(?:\s+#{element_regexp})?\s*\Z}i).first
@@ -118,7 +118,7 @@ module ConditionalTags
           elsif (Float(undetermined_text) rescue false)
             undetermined_text.to_f
           else
-            SymbolicElement.new(undetermined_text, @tag).value
+            CustomElement.new(undetermined_text, @tag).value
           end
         else
           nil
@@ -126,11 +126,6 @@ module ConditionalTags
       end
   
   
-#      def interpret_as_symbolic_element(identifier, list = nil)
-#        ConditionalTags::SymbolicElement.evaluate(identifier, list, @input_text, @tag)
-#      end
-  
-    
       def build_array(items_list)
         return [] if items_list.strip.blank?
         list_copy = items_list + ","
