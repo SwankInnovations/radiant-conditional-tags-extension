@@ -1,6 +1,7 @@
 module ConditionalTags
   include Radiant::Taggable
   class TagError < StandardError; end
+  class InvalidConditionalStatement < StandardError; end
 
   desc %{     
     Renders the contents of the tag if the @cond@ attribute evaluates as
@@ -67,11 +68,10 @@ module ConditionalTags
   }
   tag 'if' do |tag|
     if (condition_string = tag.attr['condition']) || (condition_string = tag.attr['cond']) then
-      condition = ConditionalStatement.new(condition_string, tag)
-      if condition.valid? then
-        tag.expand if condition.true?
-      else
-        raise TagError.new("'if' tag error: #{condition.err_msg}")
+      begin
+        tag.expand if ConditionalStatement.new(condition_string, tag).true?
+      rescue InvalidConditionalStatement
+        raise TagError.new("'if' tag error: #{$1}")
       end
     else
       raise TagError.new("'if' tag must contain 'condition' attribute")
@@ -87,11 +87,10 @@ module ConditionalTags
   }
   tag 'unless' do |tag|
     if (condition_string = tag.attr['condition']) || (condition_string = tag.attr['cond']) then
-      condition = ConditionalStatement.new(condition_string, tag)
-      if condition.valid? then
-        tag.expand unless condition.true?
-      else
-        raise TagError.new("'unless' tag error: #{condition.err_msg}")
+      begin
+        tag.expand unless ConditionalStatement.new(condition_string, tag).true?
+      rescue InvalidConditionalStatement
+        raise TagError.new("'unless' tag error: #{$1}")
       end
     else
       raise TagError.new("'unless' tag must contain 'condition' attribute")

@@ -5,8 +5,7 @@ module ConditionalTags
   describe ConditionalStatement do
     
     it "should not permit insantiation without a paramter" do
-      lambda{conditional_statement = ConditionalStatement.new}.
-          should raise_error(ArgumentError)
+      lambda{ConditionalStatement.new}.should raise_error(ArgumentError)
     end
   
   
@@ -49,10 +48,6 @@ module ConditionalTags
             @conditional_statement = ConditionalStatement.new(current_cond[:input])
           end
   
-          it "should be valid" do
-            @conditional_statement.should be_valid
-          end
-          
           it "should properly interpret the Comparison Type" do
             @conditional_statement.comparison_type.should == current_cond[:output]
           end
@@ -111,10 +106,6 @@ module ConditionalTags
               @conditional_statement = ConditionalStatement.new(input_string)
             end
             
-            it "should be valid" do
-              @conditional_statement.should be_valid
-            end
-          
             it "should properly interpret the literal" do
               @conditional_statement.send(element_type).should == current_element[:output]
             end
@@ -137,16 +128,11 @@ module ConditionalTags
         
         describe "(#{condition})" do
           
-          before :all do
-            @conditional_statement = ConditionalStatement.new(condition)
-          end
-          
-          it "should not be valid" do
-            @conditional_statement.should_not be_valid
-          end
-          
-          it "should produce the proper error message" do
-            @conditional_statement.err_msg.should == "invalid condition \"#{condition}\""
+          it "should raise the proper error & message" do
+            lambda {ConditionalStatement.new(condition)}.
+                should raise_error(InvalidConditionalStatement,
+                                   "Error in condition \"#{condition}\" " +
+                                   "(could not parse)")
           end
           
         end
@@ -164,19 +150,13 @@ module ConditionalTags
         
         describe "(#{condition[:input]})" do
           
-          before :all do
-            @conditional_statement = ConditionalStatement.new(condition[:input])
+          it "should raise the proper error & message" do
+            lambda {ConditionalStatement.new(condition[:input])}.
+                should raise_error(InvalidConditionalStatement,
+                                   "Error in condition \"#{condition[:input]}\" " +
+                                   "(invalid comparison \"#{condition[:comparison]}\")")
           end
-          
-          it "should not be valid" do
-            @conditional_statement.should_not be_valid
-          end
-          
-          it "should produce the proper error message" do
-            @conditional_statement.err_msg.should ==
-                "invalid comparison \"#{condition[:comparison]}\" in condition \"#{condition[:input]}\""
-          end
-          
+
         end
         
       end
@@ -187,35 +167,11 @@ module ConditionalTags
     
     [ :primary_element, :comparison_element].each do |element_type|
   
-      [ "['g' 'h' 'i']",
-        "[ a ]",
-        "['a' ,  a  ]",
-        "[true\t 10]"
-      ].each do |element|
-  
-        describe "with conditions having malformed array elements" do
-  
-          before :each do
-            @input_string = build_input_using(element, element_type)
-            @conditional_statement = ConditionalStatement.new(@input_string)
-          end
-          
-          it "should not be valid (using: #{@input_string})" do
-            @conditional_statement.should_not be_valid
-          end
-          
-          it "should produce the proper error message" do
-            @conditional_statement.err_msg.should == 
-                "invalid list \"#{element}\" in condition \"#{@input_string}\""
-          end
-          
-        end
-      end
-        
-        
-        
-        
-      [ {:input => "abc.def['g' 'h' 'i']", :array => "['g' 'h' 'i']"},
+      [ {:input => "['g' 'h' 'i']", :array => "['g' 'h' 'i']"},
+        {:input => "[ a ]", :array => "[ a ]"},
+        {:input => "['a' ,  a  ]", :array => "['a' ,  a  ]"},
+        {:input => "[true\t 10]", :array => "[true\t 10]"},
+        {:input => "abc.def['g' 'h' 'i']", :array => "['g' 'h' 'i']"},
         {:input => "abc[a]", :array => "[a]"},
         {:input => "abc['a', a]", :array => "['a', a]"},
         {:input => "abc[true\t 10]", :array => "[true\t 10]"}
@@ -223,18 +179,12 @@ module ConditionalTags
   
         describe "with conditions having symbolic elements with malformed array elements" do
   
-          before :each do
+          it "should raise the proper error & message" do
             @input_string = build_input_using(element[:input], element_type)
-            @conditional_statement = ConditionalStatement.new(@input_string)
-          end
-          
-          it "should not be valid (using: #{@input_string})" do
-            @conditional_statement.should_not be_valid
-          end
-          
-          it "should produce the proper error message" do
-            @conditional_statement.err_msg.should == 
-                "invalid list \"#{element[:array]}\" in condition \"#{@input_string}\""
+            lambda {ConditionalStatement.new(@input_string)}.
+                should raise_error(InvalidConditionalStatement,
+                                   "Error in condition \"#{@input_string}\" " +
+                                   "(invalid list \"#{element[:array]}\")")
           end
           
         end
@@ -243,6 +193,28 @@ module ConditionalTags
       
       
       
+      [ { :input => "abc.def[7, 'up']" },
+        { :input => "jabber[]" },
+        { :input => "jub.jub['too' , 'many' , 'elements']" }
+      ].each do |element|
+            
+        describe "with conditions containing unknown symbolic element identifiers" do
+  
+          it "should raise the proper error & message" do
+            @input_string = build_input_using(element[:input], element_type)
+            lambda {ConditionalStatement.new(@input_string)}.
+                should raise_error(InvalidConditionalStatement,
+                                   "Error in condition \"#{@input_string}\" " +
+                                   "(must be one item inside index brackets)")
+          end
+          
+        end
+          
+      end
+  
+
+
+    
       [ { :input => "abc.def[10]", :identifier => "abc.def" },
         { :input => "jabber", :identifier => "jabber" },
         { :input => "jub.jub['bird']", :identifier => "jub.jub" }
@@ -250,25 +222,18 @@ module ConditionalTags
             
         describe "with conditions containing unknown symbolic element identifiers" do
   
-          before :all do
+          it "should raise the proper error & message" do
             @input_string = build_input_using(element[:input], element_type)
-            @conditional_statement = ConditionalStatement.new(@input_string)
+            lambda {ConditionalStatement.new(@input_string)}.
+                should raise_error(InvalidConditionalStatement,
+                                   "Error in condition \"#{@input_string}\" " +
+                                   "(cannot interpret element \"#{element[:identifier]}\")")
           end
           
-          it "should not be valid (using: #{@input_string})" do
-            @conditional_statement.should_not be_valid
-          end
-          
-          it "should produce the proper error message" do
-            @conditional_statement.err_msg.should == 
-                "Error in condition \"#{@input_string}\" (cannot interpret element \"#{element[:identifier]}\")"
-          end
-            
         end
           
       end
-  
-    
+
     end
   
   end

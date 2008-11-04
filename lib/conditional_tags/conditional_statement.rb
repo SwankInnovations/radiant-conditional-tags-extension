@@ -1,28 +1,28 @@
 module ConditionalTags
   
   class InvalidSymbolicElement < StandardError; end
-  class NoMatchingEvaluator < StandardError; end
 
   class ConditionalStatement
   
     attr_reader :primary_element,
                 :comparison_type,
-                :comparison_element,
-                :err_msg
+                :comparison_element
     
     
     def initialize(input_text, tag = nil)
-      @input_text = input_text
-      @tag = tag
-      parse_and_interpret_input_text
-      evaluate_result
+      @input_text, @tag = input_text, tag
+      begin
+        parse_and_interpret_input_text
+        @result = evaluate_result
+      rescue InvalidConditionalStatement
+        raise InvalidConditionalStatement,
+              "Error in condition \"#{@input_text}\" #{$!}"
+      rescue InvalidSymbolicElement
+        raise InvalidConditionalStatement,
+              "Error in condition \"#{@input_text}\" #{$!}"
+      end
     end
-   
     
-    def valid?
-      @is_valid
-    end
-  
   
     def true?
       @result
@@ -33,38 +33,39 @@ module ConditionalTags
   
       def parse_and_interpret_input_text
         element_regexp = "(?:" +
-                  "'((?:[^']|'')*)'" +   # [0] string (surrounded by "'")
+                  "'((?:[^']|'')*)'" +   # [0] string (surrounded by ")
                   '|' +
-                  '/((?:[^/]|\\/)+)/' +  # [1] regexp (surounded by "/")
+                  '"((?:[^"]|"")*)"' +   # [1] string (surrounded by ')
                   '|' +
-                  '(true|false)' +       # [2] boolean
+                  '/((?:[^/]|\\/)+)/' +  # [2] regexp (surounded by "/")
                   '|' +
-                  '(nil|null|nothing)' + # [3] nil
+                  '(true|false)' +       # [3] boolean
                   '|' +
-                  '([^\s\'\/\]\[]+)?' +  # [4] number or symbolic element w/o list
-                  '(?:\[([^\]]*)\])?' +  # [5] array, or list for symbolic element
+                  '(nil|null|nothing)' + # [4] nil
+                  '|' +
+                  '([^\s\'\/\]\[]+)?' +  # [5] number or symbolic element w/o list
+                  '(?:\[([^\]]*)\])?' +  # [6] array, or list for symbolic element
                   ")"
         condition_type_regexp = "([^\s]+)"
         split_input = @input_text.scan(%r{\A\s*#{element_regexp}\s+#{condition_type_regexp}(?:\s+#{element_regexp})?\s*\Z}i).first
   
-        if split_input.nil? || split_input.length != 13
-          @is_valid = false
-          @err_msg = %{invalid condition "#{@input_text}"}
+        if split_input.nil? || split_input.length != 15
+          raise InvalidConditionalStatement,
+                "(could not parse)"
         else
-          @is_valid = true
-          @primary_element = interpret_as_element(split_input[0],
-                                                  split_input[1],
+          @primary_element = interpret_as_element(split_input[0] ||= split_input[1],
                                                   split_input[2],
                                                   split_input[3],
                                                   split_input[4],
-                                                  split_input[5])
-          @comparison_type = interpret_comparison_type(split_input[6]) if valid?
-          @comparison_element = interpret_as_element(split_input[7],
-                                                     split_input[8],
-                                                     split_input[9],
+                                                  split_input[5],
+                                                  split_input[6])
+          @comparison_type = interpret_comparison_type(split_input[7])
+          @comparison_element = interpret_as_element(split_input[8] ||= split_input[9],
                                                      split_input[10],
                                                      split_input[11],
-                                                     split_input[12]) if valid?
+                                                     split_input[12],
+                                                     split_input[13],
+                                                     split_input[14])
         end
       end
   
@@ -92,8 +93,8 @@ module ConditionalTags
           when 'includes-any'
             "(||)"
           else
-            @is_valid = false
-            @err_msg = %{invalid comparison "#{comparison_type}" in condition "#{@input_text}"}
+            raise InvalidConditionalStatement,
+                  "(invalid comparison \"#{comparison_type}\")"
             nil
         end
       end
@@ -107,30 +108,29 @@ module ConditionalTags
                                array_text)
         if array_text
           array = build_array(array_text)
-          return unless valid?
         end
-        
+        # if a string
         if string_text
-          string_text.gsub("''", "'")
-  
+          string_text.gsub("''", "'").gsub('""', '"')
         elsif regexp_text
           Regexp.new(regexp_text)
-  
         elsif boolean_text
           boolean_text.downcase == "true"
-  
         elsif nil_text
           nil
         elsif undetermined_text && array
-          interpret_as_symbolic_element(undetermined_text, array)
-  
+          if array.length == 1
+            SymbolicElement.new(undetermined_text, array.first, @tag).value
+          else
+            raise InvalidSymbolicElement,
+                  "(must be one item inside index brackets)"
+          end
         elsif undetermined_text
           if (Float(undetermined_text) rescue false)
             undetermined_text.to_f
           else
-            interpret_as_symbolic_element(undetermined_text)
+            SymbolicElement.new(undetermined_text, nil, @tag).value
           end
-  
         elsif array
           array
         else
@@ -140,15 +140,7 @@ module ConditionalTags
   
   
       def interpret_as_symbolic_element(identifier, list = nil)
-        begin
-          ConditionalTags::SymbolicElement.evaluate(identifier, list, @input_text, @tag)
-        rescue InvalidSymbolicElement => errmsg
-          @is_valid = false
-          @err_msg = "Error in condition \"#{@input_text}\" #{errmsg}"
-        rescue NoMatchingEvaluator => errmsg
-          @is_valid = false
-          @err_msg = "Error in condition \"#{@input_text}\" #{errmsg}"
-        end
+        ConditionalTags::SymbolicElement.evaluate(identifier, list, @input_text, @tag)
       end
   
     
@@ -156,18 +148,23 @@ module ConditionalTags
         return [] if items_list.strip.blank?
         list_copy = items_list + ","
         item_pattern = "(?:" +
-               "'((?:[^']|'')*)'" + # [0] string
+               "'((?:[^']|'')*)'" + # [0] string (wrapped in ')
                "|" +
-               "(\\w+)" +           # [1] number, boolean, or nil
+               '"((?:[^"]|"")*)"' + # [1] string (wrapped in ")
+               "|" +
+               "(\\w+)" +           # [2] number, boolean, or nil
                ")"
         items = []
         until list_copy.strip.blank?
           if list_copy.slice!(%r{\s*#{item_pattern}\s*,})
             if $1
-              # must be a string (wrapped in "'" chars)
-              items << $1
+              # must be a string (wrapped in ' chars)
+              items << $1.gsub("''", "'")
+            elsif $2
+              # must be a string (wrapped in " chars)
+              items << $1.gsub('""', '"')
             else
-              case $2.downcase
+              case $3.downcase
                 when "nil", "null", "nothing"
                   items << nil
                 when "true"
@@ -175,13 +172,13 @@ module ConditionalTags
                 when "false"
                   items << false
                 else
-                  if (Float($2) rescue false)
-                    items << $2.to_f
+                  if (Float($3) rescue false)
+                    items << $3.to_f
                   else
                     # parsed item doesn't match a valid type
                     items = nil
-                    @is_valid = false
-                    @err_msg = %{invalid list "[#{items_list}]" in condition "#{@input_text}"}
+                    raise InvalidConditionalStatement,
+                          "(invalid list \"[#{items_list}]\")"
                     break
                   end
               end
@@ -189,8 +186,8 @@ module ConditionalTags
           else
             # characters remaining in items_list that don't parse into an item
             items = nil
-            @is_valid = false
-            @err_msg = %{invalid list "[#{items_list}]" in condition "#{@input_text}"}
+            raise InvalidConditionalStatement,
+                  "(invalid list \"[#{items_list}]\")"
             break
           end
         end
@@ -199,58 +196,56 @@ module ConditionalTags
   
     
       def evaluate_result
-        return unless valid?
-   
         case comparison_type
           when "=="
-            @result = primary_element == comparison_element
+            primary_element == comparison_element
   
           when "=~"
             begin
-              @result = !!(primary_element =~ comparison_element)
+              !!(primary_element =~ comparison_element)
             rescue TypeError
-              @is_valid = false
-              @err_msg = %{the elements in condition "#{@input_text}" cannot be compared using matching}
+              raise InvalidConditionalStatement,
+                    "(these elements cannot be compared using matches)"
             end
             
           when ">"
             begin
-              @result = primary_element > comparison_element
+              primary_element > comparison_element
             rescue
-              @is_valid = false
-              @err_msg = %{the elements in condition "#{@input_text}" cannot be compared using greater-than}
+              raise InvalidConditionalStatement,
+                    "(these elements cannot be compared using greater-than)"
             end
             
           when ">="
             begin
-              @result = primary_element >= comparison_element
+              primary_element >= comparison_element
             rescue
-              @is_valid = false
-              @err_msg = %{the elements in condition "#{@input_text}" cannot be compared using greater-than-or-equal}
+              raise InvalidConditionalStatement,
+                    "(these elements cannot be compared using greater-than-or-equal)"
             end
             
           when "<"
             begin
-              @result = primary_element < comparison_element
+              primary_element < comparison_element
             rescue
-              @is_valid = false
-              @err_msg = %{the elements in condition "#{@input_text}" cannot be compared using less-than}
+              raise InvalidConditionalStatement,
+                    "(these elements cannot be compared using less-than)"
             end
             
           when "<="
             begin
-              @result = primary_element <= comparison_element
+              primary_element <= comparison_element
             rescue
-              @is_valid = false
-              @err_msg = %{the elements in condition "#{@input_text}" cannot be compared using less-than-or-equal}
+              raise InvalidConditionalStatement,
+                    "(these elements cannot be compared using less-than-or-equal)"
             end
             
           when "exists?"
             if comparison_element
-              @is_valid = false
-              @err_msg = %{the "exists?" comparison in condition "#{@input_text}" may not have a following comparison element}
+              raise InvalidConditionalStatement,
+                    "(the exists? comparison cannot be followed by a comparison element)"
             else
-              @result = !primary_element.nil?
+              !primary_element.nil?
             end
         end
       end

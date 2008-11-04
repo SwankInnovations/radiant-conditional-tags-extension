@@ -4,27 +4,9 @@ module ConditionalTags
     include Evaluatable
     
     evaluator "content" do |tag, element|
-      if element.has_key? :index
-        case element[:index].length
-          when 1
-            # original element must have been like: "content[A]"
-            if part = tag.locals.page.part(element[:index].first)
-              part.content
-            end
-          when 0
-            # original element must have been like: "content[]"
-            raise InvalidSymbolicElement,
-                "(part name not given)."
-          else
-            # original element must have been like: "content[A, B, C]"
-            raise InvalidSymbolicElement,
-                "(too many parts given - only 1 allowed)."
-        end
-      else
-        # original element must have been like: "content"
-        if part = tag.locals.page.part('body')
-          part.content
-        end
+      part_name = element[:index] ||= 'body'
+      if part = tag.locals.page.part(part_name)
+        part.content
       end
     end
 

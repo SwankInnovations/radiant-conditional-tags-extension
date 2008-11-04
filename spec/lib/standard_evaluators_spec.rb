@@ -3,7 +3,7 @@ require File.dirname(__FILE__) + '/../spec_helper'
 
 module ConditionalTags
   describe "StandardEvaluators" do
-
+    
     [ :primary_element, :comparison_element].each do |element_type|
       [:title, :slug, :url, :breadcrumb, :author].each do |page_property|
   
@@ -55,21 +55,6 @@ module ConditionalTags
         end
           
           
-        it "should be invalid if no page part is given (element is \"content[]\")" do
-          input_string = build_input_using("content[]", element_type)
-          conditional_statement = ConditionalStatement.new(input_string, @tag)
-          conditional_statement.should_not be_valid
-        end
-          
-          
-        it "should produce an err_msg if no page part is given (element is \"content[]\")" do
-          input_string = build_input_using("content[]", element_type)
-          conditional_statement = ConditionalStatement.new(input_string, @tag)
-          conditional_statement.err_msg.should ==
-              "Error in condition \"#{input_string}\" (part name not given)."
-        end
-
-        
         it "should return nil if the page part named doesn't exist (element is \"content['bogus part']\")" do
           input_string = build_input_using("content['bogus part']", element_type)
           conditional_statement = ConditionalStatement.new(input_string, @tag)
@@ -78,21 +63,6 @@ module ConditionalTags
         end
           
           
-        it "should be invalid if multiple page parts are given (the element is \"content['item1', 'item2']\")" do
-          input_string = build_input_using("content['body', 'other part']", element_type)
-          conditional_statement = ConditionalStatement.new(input_string, @tag)
-          conditional_statement.should_not be_valid
-        end
-          
-          
-        it "should produce an err_msg if multiple page parts are given (the element is \"content['item1', 'item2']\")" do
-          input_string = build_input_using("content['body', 'other part']", element_type)
-          conditional_statement = ConditionalStatement.new(input_string, @tag)
-          conditional_statement.err_msg.should ==
-              "Error in condition \"#{input_string}\" (too many parts given - only 1 allowed)."
-        end
-        
-        
         it 'should return the content of the "body" part if no index is given (the element is "content")' do
             input_string = build_input_using("content", element_type)
             conditional_statement = ConditionalStatement.new(input_string, @tag)

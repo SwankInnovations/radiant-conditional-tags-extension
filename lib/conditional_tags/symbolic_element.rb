@@ -4,6 +4,20 @@ module ConditionalTags
     @@identifiers_by_string = {}
     @@registry_initialized = nil
 
+    attr_reader :value
+
+    def initialize(identifier, index, tag)
+      @identifier, @index, @tag = identifier, index, tag
+      if evaluator = @@identifiers_by_string[@identifier]
+          element_info = { :identifier => @identifier }
+          element_info[:index] = @index if @index
+          @value = evaluator.call(tag, element_info)
+      else
+        raise InvalidSymbolicElement,
+              "(cannot interpret element \"#{@identifier}\")"
+      end
+    end
+
 
     class << self
       
@@ -22,32 +36,14 @@ module ConditionalTags
             @@identifiers_by_string[identifier] = block
           else
             raise ArgumentError,
-                  %{The match text "#{identifier}" is already registered},
-                  caller
+                  "The match text \"#{identifier}\" is already registered"
           end
         else
-          puts
-          puts
-          puts identifier.inspect
           raise TypeError,
-                %{When registering a SymbolicElementEvaluator, the identifier parameter must be a string},
-                caller
+                "When registering a SymbolicElementEvaluator, the identifier parameter must be a string"
         end
       end
 
-      
-      def evaluate(element_identifier, element_list, full_statement, tag)
-        if evaluator = @@identifiers_by_string[element_identifier]
-            element_info = { :identifier => element_identifier,
-                             :original_text => full_statement }
-            element_info[:index] = element_list if element_list
-            evaluator.call(tag, element_info)
-        else
-          raise NoMatchingEvaluator,
-                "(cannot interpret element \"#{element_identifier}\")"
-        end
-      end
-      
     end
     
   end
