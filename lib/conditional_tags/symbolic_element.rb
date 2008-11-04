@@ -1,15 +1,18 @@
 module ConditionalTags
   class SymbolicElement
     
+    attr_reader :value, :identifier, :index
+
     @@identifiers_by_string = {}
     @@registry_initialized = nil
 
-    attr_reader :value
 
-    def initialize(identifier, index, tag)
-      @identifier, @index, @tag = identifier, index, tag
+    def initialize(input_text, tag)
+      @input_text, @tag = input_text, tag
+      parse_input
       if evaluator = @@identifiers_by_string[@identifier]
-          element_info = { :identifier => @identifier }
+          element_info = { :identifier => @identifier, 
+                           :original_text => @input_text }
           element_info[:index] = @index if @index
           @value = evaluator.call(tag, element_info)
       else
@@ -45,6 +48,26 @@ module ConditionalTags
       end
 
     end
+
+
+    private
+    
+      def parse_input
+        temp_text = String.new(@input_text)
+        if temp_text.slice!(/(?:\[([^\]]*)\])\Z/)
+          @index = $1.strip
+          if @index =~ /^"((?:[^"]|"")*)"$/
+            @index = $1.gsub('""', '"')
+          elsif @index =~ /^'((?:[^']|'')*)'$/
+            @index = $1.gsub("''", "'")
+          elsif (Float(@index) rescue false)
+            @index = @index.to_f
+          end
+        end
+        if temp_text =~ %r{\A(?:(?:\[[^\]]*\])|(?:\([^\)]*\))|[^\s\(\)\[\]])+\Z}
+          @identifier = temp_text
+        end
+      end
     
   end
 end

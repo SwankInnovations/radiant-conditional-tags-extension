@@ -43,13 +43,12 @@ module ConditionalTags
                   '|' +
                   '(nil|null|nothing)' + # [4] nil
                   '|' +
-                  '([^\s\'\/\]\[]+)?' +  # [5] number or symbolic element w/o list
-                  '(?:\[([^\]]*)\])?' +  # [6] array, or list for symbolic element
+                  '((?:(?:\[[^\]]*\])|(?:\([^\)]*\))|[^\s\(\)\[\]])+)' + # [5] number, list, or symbolic element
                   ")"
         condition_type_regexp = "([^\s]+)"
         split_input = @input_text.scan(%r{\A\s*#{element_regexp}\s+#{condition_type_regexp}(?:\s+#{element_regexp})?\s*\Z}i).first
   
-        if split_input.nil? || split_input.length != 15
+        if split_input.nil? || split_input.length != 13
           raise InvalidConditionalStatement,
                 "(could not parse)"
         else
@@ -57,15 +56,13 @@ module ConditionalTags
                                                   split_input[2],
                                                   split_input[3],
                                                   split_input[4],
-                                                  split_input[5],
-                                                  split_input[6])
-          @comparison_type = interpret_comparison_type(split_input[7])
-          @comparison_element = interpret_as_element(split_input[8] ||= split_input[9],
+                                                  split_input[5])
+          @comparison_type = interpret_comparison_type(split_input[6])
+          @comparison_element = interpret_as_element(split_input[7] ||= split_input[8],
+                                                     split_input[9],
                                                      split_input[10],
                                                      split_input[11],
-                                                     split_input[12],
-                                                     split_input[13],
-                                                     split_input[14])
+                                                     split_input[12])
         end
       end
   
@@ -104,12 +101,7 @@ module ConditionalTags
                                regexp_text,
                                boolean_text,
                                nil_text,
-                               undetermined_text,
-                               array_text)
-        if array_text
-          array = build_array(array_text)
-        end
-        # if a string
+                               undetermined_text)
         if string_text
           string_text.gsub("''", "'").gsub('""', '"')
         elsif regexp_text
@@ -118,30 +110,25 @@ module ConditionalTags
           boolean_text.downcase == "true"
         elsif nil_text
           nil
-        elsif undetermined_text && array
-          if array.length == 1
-            SymbolicElement.new(undetermined_text, array.first, @tag).value
-          else
-            raise InvalidSymbolicElement,
-                  "(must be one item inside index brackets)"
-          end
         elsif undetermined_text
-          if (Float(undetermined_text) rescue false)
+          # test if an array
+          if undetermined_text =~ /\A\[([^\]]*)\]\Z/
+            build_array($1)
+          # test if a number
+          elsif (Float(undetermined_text) rescue false)
             undetermined_text.to_f
           else
-            SymbolicElement.new(undetermined_text, nil, @tag).value
+            SymbolicElement.new(undetermined_text, @tag).value
           end
-        elsif array
-          array
         else
           nil
         end
       end
   
   
-      def interpret_as_symbolic_element(identifier, list = nil)
-        ConditionalTags::SymbolicElement.evaluate(identifier, list, @input_text, @tag)
-      end
+#      def interpret_as_symbolic_element(identifier, list = nil)
+#        ConditionalTags::SymbolicElement.evaluate(identifier, list, @input_text, @tag)
+#      end
   
     
       def build_array(items_list)

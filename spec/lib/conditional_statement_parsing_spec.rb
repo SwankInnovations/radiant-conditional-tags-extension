@@ -170,14 +170,10 @@ module ConditionalTags
       [ {:input => "['g' 'h' 'i']", :array => "['g' 'h' 'i']"},
         {:input => "[ a ]", :array => "[ a ]"},
         {:input => "['a' ,  a  ]", :array => "['a' ,  a  ]"},
-        {:input => "[true\t 10]", :array => "[true\t 10]"},
-        {:input => "abc.def['g' 'h' 'i']", :array => "['g' 'h' 'i']"},
-        {:input => "abc[a]", :array => "[a]"},
-        {:input => "abc['a', a]", :array => "['a', a]"},
-        {:input => "abc[true\t 10]", :array => "[true\t 10]"}
+        {:input => "[true\t 10]", :array => "[true\t 10]"}
       ].each do |element|
   
-        describe "with conditions having symbolic elements with malformed array elements" do
+        describe "with conditions having malformed array elements" do
   
           it "should raise the proper error & message" do
             @input_string = build_input_using(element[:input], element_type)
@@ -193,9 +189,12 @@ module ConditionalTags
       
       
       
-      [ { :input => "abc.def[7, 'up']" },
-        { :input => "jabber[]" },
-        { :input => "jub.jub['too' , 'many' , 'elements']" }
+      [ { :input => "abc.def[7 up]", :identifier => "abc.def" },
+        { :input => "jabber[wocky]", :identifier => "jabber" },
+        { :input => "jub.jub", :identifier => "jub.jub" },
+        { :input => "jub[10].jub[15]", :identifier => "jub[10].jub" },
+        { :input => "function(some value).with_an[index value]",
+          :identifier => "function(some value).with_an" }
       ].each do |element|
             
         describe "with conditions containing unknown symbolic element identifiers" do
@@ -205,7 +204,7 @@ module ConditionalTags
             lambda {ConditionalStatement.new(@input_string)}.
                 should raise_error(InvalidConditionalStatement,
                                    "Error in condition \"#{@input_string}\" " +
-                                   "(must be one item inside index brackets)")
+                                   "(cannot interpret element \"#{element[:identifier]}\")")
           end
           
         end
