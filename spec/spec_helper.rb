@@ -19,32 +19,6 @@ if File.directory?(File.dirname(__FILE__) + "/matchers")
 end
 
 
-def build_input_using(element_value, element_type = :primary_element)
-  if element_type == :primary_element
-    input_string = element_value.to_s + " == 'ignore this'"
-  else
-    input_string = "'some value' == " + element_value.to_s        
-  end
-end
-
-
-def new_tag_mock
-  local_page = mock("local page")
-  local_page.stub!(:parts).and_return(nil)
-  local_page.stub!(:part).and_return(nil)
-  locals = mock("locals", :page => local_page)
-  global_page = mock("master page")
-  global_page.stub!(:parts).and_return(nil)
-  global_page.stub!(:part).and_return(nil)
-  globals = mock("globals", :page => global_page)
-  tag = mock("tag")
-  tag.stub!(:globals).and_return(globals)
-  tag.stub!(:locals).and_return(locals)
-  tag
-end
-
-
-
 
 Spec::Runner.configure do |config|
   # config.use_transactional_fixtures = true
@@ -62,4 +36,21 @@ Spec::Runner.configure do |config|
   #
   # If you declare global fixtures, be aware that they will be declared
   # for all of your examples, even those that don't use them.
+end
+
+
+
+require 'evaluator_spec_utils.rb'
+
+
+def build_input_using(element_value, element_type = :primary_element)
+  if element_type == :primary_element
+    input_string = element_value.to_s + " == 'ignore this'"
+  else
+    input_string = "'some value' == " + element_value.to_s
+  end
+end
+
+def evaluate(element)
+  "<r:evaluate element=\"#{element}\" />"
 end

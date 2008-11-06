@@ -2,213 +2,319 @@ require File.dirname(__FILE__) + '/../spec_helper'
 
 
 module ConditionalTags
-  describe "StandardEvaluators" do
-    
-    [ :primary_element, :comparison_element].each do |element_type|
-      [:title, :slug, :url, :breadcrumb, :author].each do |page_property|
-  
-        describe "where the #{element_type.to_s.humanize.titlecase} is \"#{page_property}\"" do
-          
-          before :all do
-            @tag = new_tag_mock
-            @tag.locals.page.stub!(:title).and_return('Gettysburg Address')
-            @tag.locals.page.stub!(:url).and_return("http://loghome.il.gov")
-            @tag.locals.page.stub!(:slug).and_return("/speeches/disregared/war")
-            @tag.locals.page.stub!(:breadcrumb).and_return("4 Score")
-            @tag.locals.page.stub!(:author).and_return("Abraham Lincoln")
-          end
-    
-          it "should return the value for page.#{page_property} (from the given page binding)" do
-            input_string = build_input_using(page_property, element_type)
-            conditional_statement = ConditionalStatement.new(input_string, @tag)
-            
-            conditional_statement.send(element_type).should ==
-                @tag.locals.page.send(page_property)
-          end
-          
-        end
-   
-      end
-   
-      
-      
-      
-      describe "where the #{element_type.to_s.humanize.titlecase} is \"content\"" do
-  
-        before :each do
-          @tag = new_tag_mock
-          @tag.locals.page.stub!(:part).with("body").and_return(mock("body", :content => "My Body's Content"))
-          @tag.locals.page.stub!(:part).with("other part").and_return(mock("other", :content => "Some Other Content"))
-          @tag.locals.page.stub!(:part).with("another part").and_return(mock("other", :content => "Some More Content"))
-        end
-        
-        ["body", "other part", "another part"]. each do |part|
-          
-          it "should return the content of the \"#{part}\" part (element is \"content['#{part}']\")" do
-            input_string = build_input_using("content['#{part}']", element_type)
-            conditional_statement = ConditionalStatement.new(input_string, @tag)
-            
-            conditional_statement.send(element_type).should ==
-                @tag.locals.page.part(part).content
-          end
-          
-        end
-          
-          
-        it "should return nil if the page part named doesn't exist (element is \"content['bogus part']\")" do
-          input_string = build_input_using("content['bogus part']", element_type)
-          conditional_statement = ConditionalStatement.new(input_string, @tag)
-          
-          conditional_statement.send(element_type).should == nil
-        end
-          
-          
-        it 'should return the content of the "body" part if no index is given (the element is "content")' do
-            input_string = build_input_using("content", element_type)
-            conditional_statement = ConditionalStatement.new(input_string, @tag)
-            
-            conditional_statement.send(element_type).should ==
-                @tag.locals.page.part("body").content
-        end
-      end
-  
-  
-  
-  
-      describe "where the #{element_type.to_s.humanize.titlecase} is \"part-names\"" do
-  
-        before :each do
-          @tag = new_tag_mock
-          part1 = mock("part1", :name => "part 1")
-          part2 = mock("part2", :name => "part 2")
-          part3 = mock("part3", :name => "part 3")
-          @tag.locals.page.stub!(:parts).and_return([part1, part2, part3])
-        end
-        
-        
-        it "should return an array of page part names (element is \"part-names\")" do
-          input_string = build_input_using("part-names", element_type)
-          conditional_statement = ConditionalStatement.new(input_string, @tag)
-          
-          conditional_statement.send(element_type).should == ["part 1", "part 2", "part 3"]
-        end
-          
-      end
-  
-  
-  
-  
-      describe "where the #{element_type.to_s.humanize.titlecase} is \"content.count\"" do
-  
-        before :each do
-          @tag = new_tag_mock
-          part1 = mock("part1", :name => "part 1")
-          part2 = mock("part2", :name => "part 2")
-          part3 = mock("part3", :name => "part 3")
-          @tag.locals.page.stub!(:parts).and_return([part1, part2, part3])
-        end
-        
-        it "should return a the number of page parts" do
-          input_string = build_input_using("content.count", element_type)
-          conditional_statement = ConditionalStatement.new(input_string, @tag)
-          
-          conditional_statement.send(element_type).should == 3
-        end
-          
-      end
-  
-  
-  
-  
-      describe "where the #{element_type.to_s.humanize.titlecase} is \"site-mode\"" do
-  
-        it "should return \"dev\" if the site is in development mode" do
-          Radiant::Config.stub!("[]").with('dev_host').and_return("some.development.domain")
-          @tag = new_tag_mock
-          @tag.globals.page.stub!(:request).and_return(mock("host", :host => "some.development.domain"))
-  
-          input_string = build_input_using("site-mode", element_type)
-          conditional_statement = ConditionalStatement.new(input_string, @tag)
-          
-          conditional_statement.send(element_type).should == "dev"
-        end
-        
-        
-        it "should return \"dev\" if dev_host config value is unavailable, and the request.host value is dev.*" do
-          Radiant::Config.stub!("[]").with('dev_host').and_return(nil)
-          @tag = new_tag_mock
-          @tag.globals.page.stub!(:request).and_return(mock("host", :host => "dev.some.site"))
-  
-          input_string = build_input_using("site-mode", element_type)
-          conditional_statement = ConditionalStatement.new(input_string, @tag)
-          
-          conditional_statement.send(element_type).should == "dev"
-        end
-  
-  
-        it "should return \"live\" for all other reqest host values" do
-          @tag = new_tag_mock
-          @tag.globals.page.stub!(:request).and_return(mock("host", :host => "some.site"))
-  
-          input_string = build_input_using("site-mode", element_type)
-          conditional_statement = ConditionalStatement.new(input_string, @tag)
-          
-          conditional_statement.send(element_type).should == "live"
-        end
-  
-      end
-  
+  describe CustomElement, "(StandardEvaluators)" do
 
-    
-    
-      describe "where the #{element_type.to_s.humanize.titlecase} is \"status\"" do
-  
-        it "should return \"draft\" if the page.status is 1" do
-          @tag = new_tag_mock
-          @tag.locals.page.stub!(:status).and_return(1)
-  
-          input_string = build_input_using("status", element_type)
-          conditional_statement = ConditionalStatement.new(input_string, @tag)
-          
-          conditional_statement.send(element_type).should == "draft"
-        end
-        
-        
-        it "should return \"reviewed\" if the page.status is 50" do
-          @tag = new_tag_mock
-          @tag.locals.page.stub!(:status).and_return(50)
-  
-          input_string = build_input_using("status", element_type)
-          conditional_statement = ConditionalStatement.new(input_string, @tag)
-          
-          conditional_statement.send(element_type).should == "reviewed"
-        end
-        
-        
-        it "should return \"published\" if the page.status is 100" do
-          @tag = new_tag_mock
-          @tag.locals.page.stub!(:status).and_return(100)
-  
-          input_string = build_input_using("status", element_type)
-          conditional_statement = ConditionalStatement.new(input_string, @tag)
-          
-          conditional_statement.send(element_type).should == "published"
-        end
-        
-        
-        it "should return \"hidden\" if the page.status is 101" do
-          @tag = new_tag_mock
-          @tag.locals.page.stub!(:status).and_return(101)
-  
-          input_string = build_input_using("status", element_type)
-          conditional_statement = ConditionalStatement.new(input_string, @tag)
-          
-          conditional_statement.send(element_type).should == "hidden"
-        end
-        
+    scenario :conditional_pages, :snippets
+
+    before :each do
+      @page = pages(:child_page)
+      @parent_page = pages(:parent_page)
+    end
+
+
+    describe 'evaluator for "content"' do
+
+      it "should return the content for the 'body' part if no index given (actual page)" do
+        @page.should render(evaluate('content')).
+              and_evaluate_as(@page.part('body').content)
       end
 
-    
+      it "should return the content for the 'body' part if no index given (contextual page)" do
+        @page.should render('<r:parent>' + evaluate('content') + '</r:parent>').
+              and_evaluate_as(@parent_page.part('body').content)
+      end
+
+
+      it "should return the content for the 'body' part if no index given (contextual page from within a snippet)" do
+        create_snippet "test", :content => '<r:parent>' + evaluate('content') + '</r:parent>'
+        @page.should render('<r:snippet name="test"/>').
+            and_evaluate_as(@parent_page.part('body').content)
+      end
+
+
+      it "should return the content for the part given in the index (actual page)" do
+        @page.should render(evaluate('content[other]')).
+              and_evaluate_as(@page.part('other').content)
+      end
+
+      it "should return the content for the part given in the index (contextual page)" do
+        @page.should render('<r:parent>' + evaluate('content[other]') + '</r:parent>').
+              and_evaluate_as(@parent_page.part('other').content)
+      end
+
+
+      it "should return the content for the part given in the index (contextual page from within a snippet)" do
+        create_snippet "test", :content => '<r:parent>' + evaluate('content[other]') + '</r:parent>'
+        @page.should render('<r:snippet name="test"/>').
+            and_evaluate_as(@parent_page.part('other').content)
+      end
+
+      it "should return nil if the given part doesn't exist (actual page)" do
+        @page.should render(evaluate('content[bogus]')).
+              and_evaluate_as(nil)
+      end
+
+      it "should return nil if the given part doesn't exist (contextual page)" do
+        @page.should render('<r:parent>' + evaluate('content[bogus]') + '</r:parent>').
+              and_evaluate_as(nil)
+      end
+
+
+      it "should return nil if the given part doesn't exist (contextual page from within a snippet)" do
+        create_snippet "test", :content => '<r:parent>' + evaluate('content[bogus]') + '</r:parent>'
+        @page.should render('<r:snippet name="test"/>').and_evaluate_as(nil)
+      end
+
+    end
+
+
+
+
+    describe 'evaluator for "content.count"' do
+
+      it 'should not allow an index' do
+        @page.should render(evaluate('content.count[index]')).
+            with_error("content.count element cannot include an index")
+      end
+
+
+      it 'should return the number of page parts in the current page' do
+        @page.should render(evaluate('content.count')).
+            and_evaluate_as(@page.parts.length)
+      end
+
+
+      it 'should return the number of page parts in a contextual page' do
+        @page.should render('<r:parent>' + evaluate('content.count') + '</r:parent>').
+            and_evaluate_as(@parent_page.parts.length)
+      end
+
+    end
+
+
+
+
+    describe 'evaluator for "parts"' do
+
+      it 'should not allow an index' do
+        @page.should render(evaluate('parts[index]')).
+            with_error("parts element cannot include an index")
+      end
+
+
+      it 'should return an array of page part names' do
+        @page.should render(evaluate('parts')).
+            and_evaluate_as(@page.parts.map { |part| part.name })
+      end
+
+
+      it 'should return an array of page part names (contextual page)' do
+        @page.should render('<r:parent>' + evaluate('parts') + '</r:parent>').
+            and_evaluate_as(@parent_page.parts.map { |part| part.name })
+      end
+
+    end
+
+
+
+
+    describe 'evaluator for "site-mode"' do
+
+      it 'should not allow an index' do
+        @page.should render(evaluate('site-mode[index]')).
+            with_error("site-mode element cannot include an index")
+      end
+
+
+      it 'should return "dev" if the site is in development mode' do
+        Radiant::Config.stub!("[]").with('dev_host').and_return("some.development.domain")
+        @page.should render(evaluate('site-mode')).and_evaluate_as('dev').on("some.development.domain")
+      end
+
+
+      it 'should return "dev" if dev_host config value is unavailable, but the request.host value is dev.*' do
+        Radiant::Config.stub!("[]").with('dev_host').and_return(nil)
+        @page.should render(evaluate('site-mode')).and_evaluate_as('dev').on("dev.some.site")
+      end
+
+
+      it 'should return "live" for all other values' do
+        @page.should render(evaluate('site-mode')).and_evaluate_as('live').on("any.old.domain")
+      end
+
+    end
+
+
+
+
+    describe 'evaluator for "status"' do
+
+      it 'should not allow an index' do
+        @page.should render(evaluate('status[index]')).
+            with_error("status element cannot include an index")
+      end
+
+
+      it 'should return "draft" if the status is Status[:draft]' do
+        @page.status_id = Status[:draft].id
+        @page.should render(evaluate('status')).and_evaluate_as('draft')
+      end
+
+
+      it 'should return "draft" if the status is Status[:reviewed]' do
+        @page.status_id = Status[:reviewed].id
+        @page.should render(evaluate('status')).and_evaluate_as('reviewed')
+      end
+
+
+      it 'should return "draft" if the status is Status[:published]' do
+        @page.status_id = Status[:published].id
+        @page.should render(evaluate('status')).and_evaluate_as('published')
+      end
+
+
+      it 'should return "draft" if the status is Status[:hidden]' do
+        @page.status_id = Status[:hidden].id
+        @page.should render(evaluate('status')).and_evaluate_as('hidden')
+      end
+
+
+      it 'should return "unknown" if the status is Status[:hidden]' do
+        @page.status_id = 1980
+        @page.should render(evaluate('status')).and_evaluate_as('unknown')
+      end
+
+    end
+
+
+
+
+    [:title, :slug, :url, :breadcrumb, :description, :keywords].each do |page_property|
+
+      describe "evaluator for \"#{page_property}\"" do
+
+        it 'should not allow an index' do
+          @page.should render(evaluate(page_property.to_s + '[index]')).
+              with_error("#{page_property} element cannot include an index")
+        end
+
+
+        it "should return the value for page.#{page_property} (actual page)" do
+          @page.should render(evaluate(page_property)).
+              and_evaluate_as(@page.send(page_property))
+        end
+
+
+        it "should return the value for page.#{page_property} (contextual page)" do
+          @page.should render('<r:parent>' + evaluate(page_property) + '</r:parent>').
+              and_evaluate_as(@parent_page.send(page_property))
+        end
+
+
+        it "should return the value for page.#{page_property} (contextual page from within a snippet)" do
+          create_snippet "test", :content => '<r:parent>' + evaluate(page_property) + '</r:parent>'
+          @page.should render('<r:snippet name="test"/>').
+              and_evaluate_as(@parent_page.send(page_property))
+        end
+
+      end
+
+    end
+
+
+
+
+    describe 'evaluator for "created-by"' do
+
+      it 'should not allow an index' do
+        @page.should render(evaluate('created-by[index]')).
+            with_error("created-by element cannot include an index")
+      end
+
+
+      it 'should return the creator of the current page' do
+        @page.should render(evaluate('created-by')).
+            and_evaluate_as(@page.created_by.name)
+      end
+
+
+      it 'should return the creator of the current page (contextual page)' do
+        @page.should render('<r:parent>' + evaluate('created-by') + '</r:parent>').
+              and_evaluate_as(@parent_page.created_by.name)
+      end
+
+    end
+
+
+
+
+    describe 'evaluator for "updated-by"' do
+
+      it 'should not allow an index' do
+        @page.should render(evaluate('updated-by[index]')).
+            with_error("updated-by element cannot include an index")
+      end
+
+
+      it 'should return the editor of the current page (actual page)' do
+        @page.should render(evaluate('updated-by')).
+            and_evaluate_as(@page.updated_by.name)
+      end
+
+
+      it 'should return the editor of the current page (contextual page)' do
+        @page.should render('<r:parent>' + evaluate('updated-by') + '</r:parent>').
+              and_evaluate_as(@parent_page.updated_by.name)
+      end
+
+    end
+
+
+
+
+    describe 'evaluator for "children"' do
+
+      it 'should not allow an index' do
+        @page.should render(evaluate('children[index]')).
+            with_error("children element cannot include an index")
+      end
+
+
+      it 'should return an array of the titles for the child pages (actual page)' do
+        @page.should render(evaluate('children')).
+            and_evaluate_as(@page.children.map { |child| child.name })
+      end
+
+
+      it 'should return the number of children (contextual page)' do
+        @page.should render('<r:parent>' + evaluate('children') + '</r:parent>').
+              and_evaluate_as(@parent_page.children.map { |child| child.title })
+      end
+
+    end
+
+
+
+
+    describe 'evaluator for "children.count"' do
+
+      it 'should not allow an index' do
+        @page.should render(evaluate('children.count[index]')).
+            with_error("children.count element cannot include an index")
+      end
+
+
+      it 'should return the number of children (actual page)' do
+        @page.should render(evaluate('children.count')).
+            and_evaluate_as(@page.children.length)
+      end
+
+
+      it 'should return the number of children (contextual page)' do
+        @page.should render('<r:parent>' + evaluate('children.count') + '</r:parent>').
+              and_evaluate_as(@parent_page.children.length)
+      end
+
     end
 
   end

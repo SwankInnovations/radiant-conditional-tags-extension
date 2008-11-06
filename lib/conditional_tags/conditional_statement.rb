@@ -1,14 +1,12 @@
 module ConditionalTags
-  
-  class InvalidCustomElement < StandardError; end
 
   class ConditionalStatement
-  
+
     attr_reader :primary_element,
                 :comparison_type,
                 :comparison_element
-    
-    
+
+
     def initialize(input_text, tag = nil)
       @input_text, @tag = input_text, tag
       begin
@@ -16,21 +14,21 @@ module ConditionalTags
         @result = evaluate_result
       rescue InvalidConditionalStatement
         raise InvalidConditionalStatement,
-              "Error in condition \"#{@input_text}\" #{$!}"
+              "Error in condition \"#{@input_text}\" (#{$!})"
       rescue InvalidCustomElement
         raise InvalidConditionalStatement,
-              "Error in condition \"#{@input_text}\" #{$!}"
+              "Error in condition \"#{@input_text}\" (#{$!})"
       end
     end
-    
-  
+
+
     def true?
       @result
     end
-  
-  
+
+
     private
-  
+
       def parse_and_interpret_input_text
         element_regexp = "(?:" +
                   "'((?:[^']|'')*)'" +   # [0] string (surrounded by ")
@@ -47,10 +45,10 @@ module ConditionalTags
                   ")"
         condition_type_regexp = "([^\s]+)"
         split_input = @input_text.scan(%r{\A\s*#{element_regexp}\s+#{condition_type_regexp}(?:\s+#{element_regexp})?\s*\Z}i).first
-  
+
         if split_input.nil? || split_input.length != 13
           raise InvalidConditionalStatement,
-                "(could not parse)"
+                "could not parse condition"
         else
           @primary_element = interpret_as_element(split_input[0] ||= split_input[1],
                                                   split_input[2],
@@ -65,8 +63,8 @@ module ConditionalTags
                                                      split_input[12])
         end
       end
-  
-  
+
+
       def interpret_comparison_type(comparison_type)
         case comparison_type.downcase
           when 'exists?'
@@ -91,12 +89,12 @@ module ConditionalTags
             "(||)"
           else
             raise InvalidConditionalStatement,
-                  "(invalid comparison \"#{comparison_type}\")"
+                  "invalid comparison \"#{comparison_type}\""
             nil
         end
       end
-  
-  
+
+
       def interpret_as_element(string_text,
                                regexp_text,
                                boolean_text,
@@ -124,8 +122,8 @@ module ConditionalTags
           nil
         end
       end
-  
-  
+
+
       def build_array(items_list)
         return [] if items_list.strip.blank?
         list_copy = items_list + ","
@@ -160,7 +158,7 @@ module ConditionalTags
                     # parsed item doesn't match a valid type
                     items = nil
                     raise InvalidConditionalStatement,
-                          "(invalid list \"[#{items_list}]\")"
+                          "invalid list \"[#{items_list}]\""
                     break
                   end
               end
@@ -169,68 +167,85 @@ module ConditionalTags
             # characters remaining in items_list that don't parse into an item
             items = nil
             raise InvalidConditionalStatement,
-                  "(invalid list \"[#{items_list}]\")"
+                  "invalid list \"[#{items_list}]\""
             break
           end
         end
         items
       end
-  
-    
+
+
       def evaluate_result
         case comparison_type
           when "=="
             primary_element == comparison_element
-  
+
           when "=~"
             begin
               !!(primary_element =~ comparison_element)
             rescue TypeError
               raise InvalidConditionalStatement,
-                    "(these elements cannot be compared using matches)"
+                    "these elements cannot be compared using matches"
             end
-            
+
           when ">"
             begin
               primary_element > comparison_element
             rescue
               raise InvalidConditionalStatement,
-                    "(these elements cannot be compared using greater-than)"
+                    "these elements cannot be compared using greater-than"
             end
-            
+
           when ">="
             begin
               primary_element >= comparison_element
             rescue
               raise InvalidConditionalStatement,
-                    "(these elements cannot be compared using greater-than-or-equal)"
+                    "these elements cannot be compared using greater-than-or-equal"
             end
-            
+
           when "<"
             begin
               primary_element < comparison_element
             rescue
               raise InvalidConditionalStatement,
-                    "(these elements cannot be compared using less-than)"
+                    "these elements cannot be compared using less-than"
             end
-            
+
           when "<="
             begin
               primary_element <= comparison_element
             rescue
               raise InvalidConditionalStatement,
-                    "(these elements cannot be compared using less-than-or-equal)"
+                    "these elements cannot be compared using less-than-or-equal"
             end
-            
+
           when "exists?"
             if comparison_element
               raise InvalidConditionalStatement,
-                    "(the exists? comparison cannot be followed by a comparison element)"
+                    "the exists? comparison cannot be followed by a comparison element"
             else
               !primary_element.nil?
             end
+
+          when "(&&)"
+            if (primary_element.class == Array) && (comparison_element.class == Array)
+              uniq_comparison_array = comparison_element.uniq
+              (primary_element & uniq_comparison_array).length ==uniq_comparison_array.length
+            else
+              raise InvalidConditionalStatement,
+                    "only lists can be compared using 'includes'"
+            end
+
+          when "(||)"
+            if (primary_element.class == Array) && (comparison_element.class == Array)
+              !(primary_element & comparison_element).empty? || comparison_element.empty?
+            else
+              raise InvalidConditionalStatement,
+                    "only lists can be compared using 'includes-any'"
+            end
         end
       end
-  
+
   end
 end

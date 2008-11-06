@@ -3,17 +3,17 @@ module ConditionalTags
   class TagError < StandardError; end
   class InvalidConditionalStatement < StandardError; end
 
-  desc %{     
+  desc %{
     Renders the contents of the tag if the @cond@ attribute evaluates as
     TRUE. The @cond@ attribute must be a valid conditional statement made up of:
-    
+
     * *Primary Element* - This is one of two possible elements in the @cond and
       is always required.
     * *Comparison Type* - This tells how the *Primary Element* and *Comparison
       Elements* should be compared with each other.  It is always required.
     * *Comparison Element* - This element defines what to compare agains and is
-      either required or must be omitted depending on the *Comparison Type*. 
-    
+      either required or must be omitted depending on the *Comparison Type*.
+
     *Usage:*
     <pre><code><r:if condition="PrimaryElement ComparisonType[ ComparisonElement]"] /></code></pre>
 
@@ -24,15 +24,15 @@ module ConditionalTags
       So, 'my unique string''s value' produces: "my unique string's value").
     * *Number* - 1234 or -123.4
     * *True/False* - false or False or true or TRUE (boolean).
-    * *Nothing* - nothing, null, or nil (stands for non-existance)
+    * *Nothing* - nothing, null, or nil
     * *RegExp* - /regexp/  Regular expressions are fancy tools to perform
       matching against strings. You'd use these along with the "matches"
       *Comparison Type*.
-    * *List* - ['some text', 'more text'] A lists is just a goup of Text, Number,
-      True/False, and/or Nothing elements.
-    * *Special Reference* - Like: title, part['my page part'], or children.count,
+    * *List* - ['some text', 'more text'] a group of Text, Number, True/False,
+      and/or Nothing elements.
+    * *Custom Element* - Like: title, content['my page part'], or children.count,
       These elements refer to values about your site or its content.
-    
+
     *Kinds of Comparisons*
     * *equals* (also *is*, *=*, or *==) - Checks equality.
     * *matches* (also *=~*) - Checks whether a regexp matches a string
@@ -42,7 +42,7 @@ module ConditionalTags
     * *lte* - Checks whether Primary Element is less than or equal to the Comparison Element
     * *includes* (also *includes-all*) - Checks whether all items in Comparison Element are found in Primary Element
     * *includes-any* - Checks whether any of the items in Comparison Element are are found in Primary Element
-    
+
     *Examples:*
     <code><r:if cond="title is 'My Page Title'">...</r:if>
        TRUE if the page title is "My Page Title"</code>
@@ -79,7 +79,7 @@ module ConditionalTags
   end
 
 
-  desc %{     
+  desc %{
     Opposite of the @if@ tag (see @if@ tag for details on usage)
 
     *Usage:*

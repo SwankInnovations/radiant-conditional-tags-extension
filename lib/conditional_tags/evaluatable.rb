@@ -1,10 +1,10 @@
 module ConditionalTags
   module Evaluatable
-    
+
     def self.included(base)
       base.extend(ClassMethods)
     end
-  
+
     module ClassMethods
       def evaluator(identifier, index_setting = nil, &block)
         identifier = identifier.to_s
@@ -12,7 +12,15 @@ module ConditionalTags
           updated_block = lambda do |tag, element|
             if element.has_key? :index
               raise InvalidCustomElement,
-                  "(#{identifier} cannot include an index)."
+                  "#{identifier} element cannot include an index"
+            end
+            block.call(tag, element)
+          end
+        elsif index_setting == :index_required
+          updated_block = lambda do |tag, element|
+            unless element.has_key? :index
+              raise InvalidCustomElement,
+                  "#{identifier} element requires an index"
             end
             block.call(tag, element)
           end
@@ -22,6 +30,6 @@ module ConditionalTags
         ConditionalTags::CustomElement.register_evaluator(identifier, updated_block)
       end
     end
-  
+
   end
 end

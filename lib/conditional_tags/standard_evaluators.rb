@@ -2,30 +2,27 @@ module ConditionalTags
   module StandardEvaluators
 
     include Evaluatable
-    
-    evaluator "content" do |tag, element|
-      part_name = element[:index] ||= 'body'
+
+
+    evaluator "content" do |tag, element_info|
+      part_name = element_info[:index] ||= 'body'
       if part = tag.locals.page.part(part_name)
         part.content
       end
     end
 
 
-    evaluator "content.count", :no_index_allowed do |tag, element|
+    evaluator "content.count", :no_index_allowed do |tag, element_info|
       tag.locals.page.parts.length
     end
 
-  
-    evaluator "part-names", :no_index_allowed do |tag, element|
-      value = []
-      tag.locals.page.parts.each do |part|
-        value << part.name
-      end
-      value
+
+    evaluator "parts", :no_index_allowed do |tag, element_info|
+      tag.locals.page.parts.map { |part| part.name }
     end
-  
-  
-    evaluator "site-mode", :no_index_allowed do |tag, element|
+
+
+    evaluator "site-mode", :no_index_allowed do |tag, element_info|
       if (dev_host = Radiant::Config['dev_host']) && (tag.globals.page.request.host == dev_host)
         "dev"
       elsif tag.globals.page.request.host =~ /^dev\./
@@ -36,15 +33,15 @@ module ConditionalTags
     end
 
 
-    evaluator "status", :no_index_allowed do |tag, element|
+    evaluator "status", :no_index_allowed do |tag, element_info|
       case tag.locals.page.status
-        when 1
+        when Status[:draft]
           "draft"
-        when 50
+        when Status[:reviewed]
           "reviewed"
-        when 100
+        when Status[:published]
           "published"
-        when 101
+        when Status[:hidden]
           "hidden"
         else
           "unknown"
@@ -52,16 +49,31 @@ module ConditionalTags
     end
 
 
-    [:title, :slug, :url, :breadcrumb, :author].each do |page_property|
-      evaluator page_property, :no_index_allowed do |tag, element|
+    [:title, :slug, :url, :breadcrumb, :description, :keywords].each do |page_property|
+      evaluator page_property, :no_index_allowed do |tag, element_info|
         tag.locals.page.send(page_property)
       end
     end
 
 
-    evaluator "name", :no_index_allowed do |tag, element|
-      tag.locals.page.title
+    evaluator "created-by", :no_index_allowed do |tag, element_info|
+      tag.locals.page.created_by.name
     end
-  
+
+
+    evaluator "updated-by", :no_index_allowed do |tag, element_info|
+      tag.locals.page.updated_by.name
+    end
+
+
+    evaluator "children", :no_index_allowed do |tag, element_info|
+      tag.locals.page.children.map { |child| child.title }
+    end
+
+
+    evaluator "children.count", :no_index_allowed do |tag, element_info|
+      tag.locals.page.children.length
+    end
+
   end
 end

@@ -6,52 +6,52 @@ benefits:
 
   1. Adds power.  Take Radiant's <r:if_content> tag.  It tests for the existence
      of page parts.  But, with the conditional tags extension, you can test if:
-     
+
          content['body'] exists?  (just like <r:if_content>)
          content['body'] blank?
          content['body'] matches /radiant is cool/
          content includes-any ['body', 'other part']
-         
+
      Or take the <r:if_url> tag.  It can match a url but how do you do matching
      on breadcrumbs?  You can't.  But with conditional tags it's as easy as:
-      
+
          <r:if cond="breadcrumb matches /your regexp/">
-      
+
      And how about these conditions:
-      
+
          children.count gte 5  (greater than or equal to 5)
-         author is 'Chris Parrish'
-         
-         
+         created-by is 'Chris Parrish'
+
+
   2. Makes the user's life easier.  The observant reader is sure to notice that
-     this new syntax adds complexity.  Sure. 
-     
+     this new syntax adds complexity.  Sure.
+
      But users no longer have to learn a growing list of unique <r:if_xxx>
      tags just to know what they can and can't test.  And let's not forget the
      myriad of possible attributes that all these disjointed tags offer.
-     
+
      I'll stick with convention over configuration any day.  Let users learn a
      pattern instead of memorizing disparate rules.  That's easier.
-      
-      
+
+
   3. Helps Extension Developers.  Many extensions need conditionals, but:
-     
-        * Writing these conditionals can get complicated. Often only the most 
+
+        * Writing these conditionals can get complicated. Often only the most
           basic comparisons get created -- even when users could use better ones
-          
+
         * There's a bunch of re-inventing the wheel going on across extensions.
-          What ever  happened to DRY?
-          
+          What ever happened to DRY?
+
         * Here come more tags.  Did I mention that proliferation of <r:if_xxx>
           and <r:unless_xxx> is bad for the user?  Add enough extensions and it
           can get plain silly.
-          
+
      Instead, the Conditional Tags Extension offloads this work for you.  We'll
      do the fancy parsing, cast the condition elements into ruby variables,
      perform the comparison and handle the errors.  So, if your extension needs
      to support:
-         
+
          <r:if cond="harmonious.biscuits == 'sweet'">
-         
-     All you need to do is create a simple class to tell Conditional Tags how
+
+     All you need to do is create an evaluator to tell Conditional Tags how
      to evaluate harmonius.biscuits and it all just works. Easy.
