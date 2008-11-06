@@ -5,6 +5,7 @@ class ConditionalTagsExtension < Radiant::Extension
 
   def activate
     Page.send :include, ConditionalTags
-    load "conditional_tags/standard_evaluators.rb"
+    ConditionalTags::CustomElement.send :include, ConditionalTags::StandardEvaluators
+#    load "conditional_tags/standard_evaluators.rb"
   end
 end

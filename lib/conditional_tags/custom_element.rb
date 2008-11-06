@@ -3,7 +3,6 @@ module ConditionalTags
   class CustomElement
 
     attr_reader :value, :identifier, :index
-
     @@identifiers_by_string = {}
 
 
@@ -22,22 +21,10 @@ module ConditionalTags
     end
 
 
-    class << self
-
-      def register_evaluator(identifier, block)
-        if identifier.class == String
-          unless @@identifiers_by_string.has_key? identifier
-            @@identifiers_by_string[identifier] = block
-          else
-            raise ArgumentError,
-                  "The match text \"#{identifier}\" is already registered"
-          end
-        else
-          raise TypeError,
-                "When registering a CustomElementEvaluator, the identifier parameter must be a string"
-        end
-      end
-
+    def self.register_evaluator(identifier, block)
+      raise ArgumentError,
+            "The match text \"#{identifier}\" is already registered" if @@identifiers_by_string.has_key? identifier
+      @@identifiers_by_string[identifier] = block
     end
 
 
