@@ -71,7 +71,7 @@ module ConditionalTags
       begin
         tag.expand if ConditionalStatement.new(condition_string, tag).true?
       rescue InvalidConditionalStatement
-        raise TagError.new("'if' tag error: #{$1}")
+        raise TagError.new("'if' tag error: #{$!}")
       end
     else
       raise TagError.new("'if' tag must contain 'condition' attribute")
@@ -90,7 +90,7 @@ module ConditionalTags
       begin
         tag.expand unless ConditionalStatement.new(condition_string, tag).true?
       rescue InvalidConditionalStatement
-        raise TagError.new("'unless' tag error: #{$1}")
+        raise TagError.new("'unless' tag error: #{$!}")
       end
     else
       raise TagError.new("'unless' tag must contain 'condition' attribute")

@@ -1,12 +1,10 @@
 module ConditionalTags
-  class InvalidCustomElement < StandardError; end
 
   class CustomElement
 
     attr_reader :value, :identifier, :index
 
     @@identifiers_by_string = {}
-    @@registry_initialized = nil
 
 
     def initialize(input_text, tag)
@@ -19,23 +17,14 @@ module ConditionalTags
           @value = evaluator.call(tag, element_info)
       else
         raise InvalidCustomElement,
-              "cannot interpret element \"#{@identifier}\""
+              "cannot evaluate element \"#{@identifier}\""
       end
     end
 
 
     class << self
 
-      def initialize_registry
-        unless @@registry_initialized
-          @@registry_initialized = true
-          include ConditionalTags::StandardEvaluators
-        end
-      end
-
-
       def register_evaluator(identifier, block)
-        initialize_registry
         if identifier.class == String
           unless @@identifiers_by_string.has_key? identifier
             @@identifiers_by_string[identifier] = block
@@ -72,4 +61,7 @@ module ConditionalTags
       end
 
   end
+
+  class InvalidCustomElement < StandardError; end
+
 end

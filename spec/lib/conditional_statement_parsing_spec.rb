@@ -203,7 +203,7 @@ module ConditionalTags
             lambda {ConditionalStatement.new(@input_string)}.
                 should raise_error(InvalidConditionalStatement,
                                    "Error in condition \"#{@input_string}\" " +
-                                   "(cannot interpret element \"#{element[:identifier]}\")")
+                                   "(cannot evaluate element \"#{element[:identifier]}\")")
           end
         end
 
