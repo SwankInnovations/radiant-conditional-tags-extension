@@ -7,7 +7,7 @@ module ConditionalTags
     Renders the contents of the tag if the @cond@ attribute evaluates as
     TRUE. The @cond@ attribute must be a valid conditional statement made up of:
 
-    * *Primary Element* - This is one of two possible elements in the @cond and
+    * *Primary Element* - This is one of two possible elements in the @cond@ and
       is always required.
     * *Comparison Type* - This tells how the *Primary Element* and *Comparison
       Elements* should be compared with each other.  It is always required.

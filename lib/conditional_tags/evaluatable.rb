@@ -6,8 +6,6 @@ module ConditionalTags
     end
 
     module ClassMethods
-      
-      # declares a new evaluator
       def evaluator(identifier, index_setting = nil, &block)
         identifier = identifier.to_s
         if index_setting == :index_not_permitted
@@ -26,6 +24,5 @@ module ConditionalTags
         ConditionalTags::CustomElement.register_evaluator(identifier, updated_block)
       end
     end
-
   end
 end
