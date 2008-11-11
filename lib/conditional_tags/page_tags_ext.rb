@@ -9,7 +9,7 @@ module ConditionalTags
 
     desc %{
       Renders the contents of the tag if the @cond@ attribute evaluates as
-      TRUE. The @cond@ attribute must be a valid conditional statement made up of:
+      TRUE. The @cond@ attribute must be a conditional statement made up of:
 
       * *Primary Element* - This is one of two possible elements in the @cond@ and
         is always required.
@@ -22,18 +22,10 @@ module ConditionalTags
       <pre><code><r:if condition="PrimaryElement ComparisonType[ ComparisonElement]"] /></code></pre>
 
       *Kinds of Elements:*
-      * *Text* - 'My Text' Text must be surrounded by apostrophes. If you need
-        to use the apostrophe character in the text, use it twice to "escape" it
-        (i.e. 'Jim''s Text' produces: "Jim's Text").
-        So, 'my unique string''s value' produces: "my unique string's value").
-      * *Number* - 1234 or -123.4
-      * *True/False* - false or False or true or TRUE (boolean).
-      * *Nothing* - nothing, null, or nil
-      * *RegExp* - /regexp/  Regular expressions are fancy tools to perform
-        matching against strings. You'd use these along with the "matches"
-        *Comparison Type*.
-      * *List* - ['some text', 'more text'] a group of Text, Number, True/False,
-        and/or Nothing elements.
+      * *Literal Elements* - These are just what they say. They can be *text*
+        (like 'some text'), *number* (like 12 or -123.4), *T/F* (like true),
+        *nothing* (like nothing, nil, or null), *regular expression* (like
+        /colou?r/), or a *list* (like ['some text', 'another bit'])
       * *Custom Element* - Like: title, content['my page part'], or children.count,
         These elements refer to values about your site or its content.
 
@@ -54,17 +46,14 @@ module ConditionalTags
       <pre><code><r:if condition="content['some part'] exists?">...</r:if>
          TRUE if this page has a content tab named "some part"</code>
 
-      <code><r:if cond="content includes ['body', 'another part']">...</r:if>
+      <code><r:if cond="part-names includes ['body', 'another part']">...</r:if>
          TRUE if both "body" and "another part" are content tabs on the page</code>
 
-      <code><r:if cond="content includes ['body', 'another part']">...</r:if>
+      <code><r:if cond="part-names includes ['body', 'another part']">...</r:if>
          TRUE if either "body" or "another part" are content tabs on the page</code>
 
       <code><r:if cond="url matches /products/">...</r:if>
          TRUE if the page url includes the text "products"</code>
-
-      <code><r:if cond="page[url] matches /.*/about/.*/">...</r:if>
-         TRUE if the page's URL matches the Regexp: '*/about/.*'</code>
 
       <code><r:if cond="children.count lte 10">...</r:if>
          TRUE if the number of children is less than or equal to 10</code>
@@ -103,9 +92,9 @@ module ConditionalTags
 
 
     desc %{
-      Renders the value of a variable. The @value_for@ attribute specifies
-      which variable (or, you can use <code>value_for="*all*"</code> to
-      render a list of all current variables).
+      Renders the value of an element. The @value_for@ attribute specifies
+      which element the same way that the @if@ and @unless@ tags work (i.e.
+      @value_for="content[body]"@ outputs the content of the body page part).
 
       *Usage:*
       <pre><code><r:puts value_for="varName|*all*" /></code></pre>
