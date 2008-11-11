@@ -24,5 +24,6 @@ module ConditionalTags
         ConditionalTags::CustomElement.register_evaluator(identifier, updated_block)
       end
     end
+
   end
 end
