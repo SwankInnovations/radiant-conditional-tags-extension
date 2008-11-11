@@ -10,7 +10,7 @@ module ConditionalTags
       # declares a new evaluator
       def evaluator(identifier, index_setting = nil, &block)
         identifier = identifier.to_s
-        if index_setting == :no_index_allowed
+        if index_setting == :index_not_permitted
           updated_block = lambda do |tag, element|
             raise InvalidCustomElement, "#{identifier} element cannot include an index" if element.has_key? :index
             block.call(tag, element)
