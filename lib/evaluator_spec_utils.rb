@@ -5,8 +5,13 @@
 module EvaluatorsTestTag
   include Radiant::Taggable
     tag 'evaluate' do |tag|
-      custom_element = ConditionalTags::CustomElement.new(tag.attr['element'], tag)
-      "#{custom_element.value.inspect}:#{custom_element.value.class}"
+      if tag.attr.include? 'value_for'
+        custom_element = ConditionalTags::CustomElement.new(tag.attr['value_for'], tag)
+        "#{custom_element.value.inspect}:#{custom_element.value.class}"
+      else
+        raise "Woah. If you want to use the nifty <r:evaluate> tag, in your " +
+            "specs, you'll need to include a 'value_for' attribute."
+      end
     end
 end
 Page.send :include, EvaluatorsTestTag
