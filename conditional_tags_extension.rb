@@ -1,5 +1,5 @@
 class ConditionalTagsExtension < Radiant::Extension
-  version "0.3.5"
+  version "0.4"
   description "Adds <r:if> and <r:unless> (and <r:puts>) tags to Pages, Snippets, and Layouts"
   url ""
 

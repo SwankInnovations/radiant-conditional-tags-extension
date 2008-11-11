@@ -1,8 +1,8 @@
 = ConditionalTags
 
-The Conditional Tags extension adds <r:if> and <r:unless> tags giving Radiant
-powerful, generalized condition handling and branching.  There are three main
-benefits:
+The Conditional Tags extension adds <r:if>, <r:unless>, and <r:puts> tags giving
+Radiant powerful, generalized condition handling and branching.  There are three
+main benefits:
 
   1. Adds power.  Take Radiant's <r:if_content> tag.  It tests for the existence
      of page parts.  But, with the conditional tags extension, you can test if:
@@ -10,7 +10,7 @@ benefits:
          content['body'] exists?  (just like <r:if_content>)
          content['body'] blank?
          content['body'] matches /radiant is cool/
-         content includes-any ['body', 'other part']
+         parts includes-any ['body', 'other part']
 
      Or take the <r:if_url> tag.  It can match a url but how do you do matching
      on breadcrumbs?  You can't.  But with conditional tags it's as easy as:
