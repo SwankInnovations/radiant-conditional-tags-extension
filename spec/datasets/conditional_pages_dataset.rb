@@ -1,4 +1,4 @@
-class ConditionalPagesScenario < Scenario::Base
+class ConditionalPagesDataset < Dataset::Base
   uses :home_page, :users
 
   def load

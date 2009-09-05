@@ -4,7 +4,7 @@ require File.dirname(__FILE__) + '/../spec_helper'
 module ConditionalTags
   describe CustomElement, "(StandardEvaluators)" do
 
-    scenario :conditional_pages, :snippets
+    dataset :conditional_pages, :snippets
 
     before :each do
       @page = pages(:child_page)
