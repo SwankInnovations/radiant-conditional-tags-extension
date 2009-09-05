@@ -50,5 +50,5 @@ def build_input_using(element_value, element_type = :primary_element)
 end
 
 def evaluate(element)
-  "<r:evaluate element=\"#{element}\" />"
+  "<r:evaluate value_for=\"#{element}\" />"
 end
