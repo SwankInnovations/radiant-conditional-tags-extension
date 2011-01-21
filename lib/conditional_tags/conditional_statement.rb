@@ -142,7 +142,7 @@ module ConditionalTags
               items << $1.gsub("''", "'")
             elsif $2
               # must be a string (wrapped in " chars)
-              items << $1.gsub('""', '"')
+              items << $2.gsub('""', '"')
             else
               case $3.downcase
                 when "nil", "null", "nothing"
