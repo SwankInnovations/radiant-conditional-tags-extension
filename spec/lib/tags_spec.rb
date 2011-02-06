@@ -26,6 +26,14 @@ describe "ConditionalTags::PageTagsExt" do
         as(@page.title + ":" + @page.title.class.to_s)
     end
 
+    it 'should return the evaluated value for a custom element if condition is true' do
+      @page.should render('<r:puts value_for="title" if="title exists?" />').as(@page.title)
+    end
+    
+    it 'should not return the evaluated value for a custom element if condition is false' do
+      @page.should render('<r:puts value_for="title" if="true = false" />').as("")
+    end
+
   end
 
 end
