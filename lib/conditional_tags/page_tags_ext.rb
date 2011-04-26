@@ -99,19 +99,28 @@ module ConditionalTags
       Adding the @if attribute will render the element iff the condition is true.
       The condition syntax is the same as for the @if tag. The @if attribute is 
       optional.
+
+      Adding the @text atribute will allow it to render simple text. This, of course,
+      is only useful when paired with the @if attribute.
       
       *Usage:*
       <pre><code><r:puts value_for="varName|*all*" /></code></pre>
     }
     tag 'puts' do |tag|
-      if custom_element_text = tag.attr['value_for']
+        if custom_element_text = tag.attr['value_for'] or text = tag.attr['text']
         begin
-          
-          value = CustomElement.new(custom_element_text, tag).value
-          if tag.attr['more'] == 'true'
+
+          if custom_element_text
+            value = CustomElement.new(custom_element_text, tag).value
+            if tag.attr['more'] == 'true'
             value = value.to_s + ":" + value.class.to_s
+            end
           end
           
+          if text
+            value = text
+          end
+
           if if_string = tag.attr['if']
             value if ConditionalStatement.new(if_string, tag).true?
           else
@@ -121,7 +130,7 @@ module ConditionalTags
           raise TagError.new("'puts' tag error: #{$!}")
         end
       else
-        raise TagError.new("`puts' tag must contain a 'value_for' attribute")
+        raise TagError.new("`puts' tag must contain a 'value_for' or 'text' attribute")
       end
     end
 

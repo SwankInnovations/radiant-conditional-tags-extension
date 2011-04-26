@@ -55,3 +55,13 @@ main benefits:
 
      All you need to do is create an evaluator to tell Conditional Tags how
      to evaluate harmonius.biscuits and it all just works. Easy.
+
+The <r:puts> tag also provides several useful features that make it a very handy 
+tool when writing conditional html:
+  
+  * Allows for an optional @if attribute that will output the value stated in the
+    @value_for attribute if and only if the condition is true.
+
+  * For simpler scenarios, it is also possible to pass in a @text attribute, that, 
+    in conjunction with the @if attribute, will render simple text when the
+    condition is true.
